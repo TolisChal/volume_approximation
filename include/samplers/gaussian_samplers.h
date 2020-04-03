@@ -151,6 +151,7 @@ void gaussian_first_coord_point(Polytope &P,
                          const NT &a_i,
                          VT &lamdas,
                          Parameters const& var) {
+    nsteps2 += walk_len;
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n, rand_coord;
     boost::random::uniform_int_distribution<> uidist(0, n - 1);
@@ -184,6 +185,7 @@ void gaussian_next_point(Polytope &P,
                         const NT &a_i,
                         VT &lamdas,
                         Parameters const& var) {
+    nsteps2 += walk_len;
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n, rand_coord;
     boost::random::uniform_int_distribution<> uidist(0, n - 1);
@@ -216,6 +218,7 @@ void rand_gaussian_point_generator(Polytope &P,
                          const NT &a_i,
                          Parameters const& var)  // constans for volume
 {
+    nsteps2 += rnum * walk_len;
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n;
     //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();

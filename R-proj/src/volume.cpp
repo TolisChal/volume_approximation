@@ -13,13 +13,18 @@
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
+
+int noracles2 = 0;
+int nballs2 = 0;
+int nsteps2 = 0;
+
 #include "volume.h"
 #include "cooling_balls.h"
 #include "cooling_hpoly.h"
 
 
 template <class Point, class NT, class Polytope>
-double generic_volume(Polytope& P, unsigned int walk_step, double e,
+Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e,
                       Rcpp::Nullable<Rcpp::NumericVector> InnerBall, bool CG, bool CB, bool hpoly, unsigned int win_len,
                       unsigned int N, double C, double ratio, double frac,  NT lb, NT ub, NT p, NT alpha,
                       unsigned int NN, unsigned int nu, bool win2, bool ball_walk, double delta, bool cdhr,
@@ -117,7 +122,15 @@ double generic_volume(Polytope& P, unsigned int walk_step, double e,
         vol = volume(P, var, InnerB);
     }
 
-    return vol * round_val;
+    Rcpp::NumericVector res(5);
+    res[0] = vol*round_val;
+    res[1] = nballs2;
+    res[2] = nsteps2*2;
+    //std::cout<<"noracles = "<<noracles<<std::endl;
+    res[3] = 0;
+    res[4] = nsteps2;
+
+    return res;
 }
 
 //' The main function for volume approximation of a convex Polytope (H-polytope, V-polytope or a zonotope)
@@ -172,7 +185,7 @@ double generic_volume(Polytope& P, unsigned int walk_step, double e,
 //' vol = volume(Z, random_walk = "RDHR", walk_length = 5)
 //' @export
 // [[Rcpp::export]]
-double volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_NilValue,
+Rcpp::NumericVector volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_NilValue,
                 Rcpp::Nullable<double> error = R_NilValue,
                 Rcpp::Nullable<Rcpp::NumericVector> inner_ball = R_NilValue,
                 Rcpp::Nullable<std::string> algo = R_NilValue,

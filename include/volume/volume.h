@@ -307,6 +307,7 @@ NT volume_gaussian_annealing(Polytope &P,
     #endif
 
     unsigned int mm = a_vals.size()-1, j=0;
+    nballs2 = mm;
 
     #ifdef VOLESTI_DEBUG
     if(print){

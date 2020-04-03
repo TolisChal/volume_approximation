@@ -16,6 +16,21 @@ poly_gen <- function(kind_gen, Vpoly_gen, Zono_gen, dim_gen, m_gen) {
     .Call(`_volesti_poly_gen`, kind_gen, Vpoly_gen, Zono_gen, dim_gen, m_gen)
 }
 
+#' Internal rcpp function for the rounding of a convex polytope
+#'
+#' @param P A convex polytope (H- or V-representation or zonotope).
+#' @param random_walk Optional. A string that declares the random walk.
+#' @param walk_length Optional. The number of the steps for the random walk.
+#' @param parameters Optional. A list for the parameters of the methods:
+#'
+#' @section warning:
+#' Do not use this function.
+#'
+#' @return A numerical matrix that describes the rounded polytope and contains the round value.
+rounding <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL) {
+    .Call(`_volesti_rounding`, P, random_walk, walk_length, parameters)
+}
+
 #' The main function for volume approximation of a convex Polytope (H-polytope, V-polytope or a zonotope)
 #'
 #' For the volume approximation can be used two algorithms. Either SequenceOfBalls or CoolingGaussian. A H-polytope with \eqn{m} facets is described by a \eqn{m\times d} matrix \eqn{A} and a \eqn{m}-dimensional vector \eqn{b}, s.t.: \eqn{Ax\leq b}. A V-polytope is defined as the convex hull of \eqn{m} \eqn{d}-dimensional points which correspond to the vertices of P. A zonotope is desrcibed by the Minkowski sum of \eqn{m} \eqn{d}-dimensional segments.
