@@ -15,7 +15,7 @@
 
 // Pick a random direction as a normilized vector
 template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_direction(const unsigned int dim, VT &vec, parameters &var) {
+Point test_get_direction(const unsigned int dim, VT &vec, const parameters &var) {
 
     //boost::normal_distribution<> rdist(0,1);
     boost::normal_distribution<> nrdist = var.urdist1;//(0,1);
@@ -51,7 +51,7 @@ Point test_get_direction(const unsigned int dim, VT &vec, parameters &var) {
 
 // Pick a random point from a d-sphere
 template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_point_on_Dsphere(const unsigned int dim, const NT &radius, VT &vec, parameters &var){
+Point test_get_point_on_Dsphere(const unsigned int dim, const NT &radius, VT &vec, const parameters &var){
     Point p = test_get_direction<RNGType, Point, NT>(dim, vec, var);
     p = (radius == 0) ? p : radius * p;
     return p;
@@ -60,7 +60,7 @@ Point test_get_point_on_Dsphere(const unsigned int dim, const NT &radius, VT &ve
 
 // Pick a random point from a d-ball
 template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, VT &vec, parameters &var){
+Point test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, VT &vec, const parameters &var){
 
     RNGType &rng = var.rng;
     boost::random::uniform_real_distribution<> urdist = var.urdist;
@@ -78,7 +78,7 @@ Point test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, VT &ve
 // ----- RANDOM POINT GENERATION FUNCTIONS ------------ //
 
 
-template <typename Polytope, typename PointList, typename Parameters, typename Point, typename VT>
+template <typename Polytope, typename PointList, typename Parameters, typename Point, typename VT, typename NT>
 void test_rand_point_generator(Polytope &P,
                          Point &p,   // a point to start
                          const unsigned int rnum,
@@ -87,27 +87,30 @@ void test_rand_point_generator(Polytope &P,
                          VT &lamdas,
                          VT &Av,
                          VT &vec,
+                               const NT &diameter,
                          const Parameters &var)  // constants for volume
 {
     //typedef typename Polytope::VT VT;
-    typedef typename Point::FT NT;
+    //typedef typename Point::FT NT;
 
     //VT lamdas, Av;
     //lamdas.setZero(P.num_of_hyperplanes());
     //Av.setZero(P.num_of_hyperplanes());
 
     NT lambda;
+    nsteps += (rnum * walk_len);
 
-    test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda, var, vec, true);
+    test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec, true);
     for (unsigned int j = 0; j < walk_len-1; ++j){
-        test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda,  var, vec);
+        test_billiard_walk(P, p, diameter, lamdas, Av, lambda,  var, vec);
+
     }
     randPoints.push_back(p);
 
     //rnum--;
     for (unsigned int i = 1; i <= rnum-1; ++i) {
         for (unsigned int j = 0; j < walk_len; ++j) {
-            test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda,  var, vec);
+            test_billiard_walk(P, p, diameter, lamdas, Av, lambda,  var, vec);
         }
         randPoints.push_back(p);
     }
@@ -122,12 +125,16 @@ void test_uniform_first_point(Polytope &P,
                          VT &Av,
                          VT &vec,
                          NT &lambda,
+                              const NT &diameter,
                          const Parameters &var) {
 
-    test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda, var, vec, true);
+    test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec, true);
+    nsteps += walk_len;
     walk_len--;
 
-    for (unsigned int j = 0; j < walk_len; j++) test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda, var, vec);
+    for (unsigned int j = 0; j < walk_len; j++){
+        test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec);
+    }
 
 }
 
@@ -141,14 +148,18 @@ void test_uniform_next_point(Polytope &P,
                         VT &Av,
                         VT &vec,
                         NT &lambda,
+                        const NT &diameter,
                         const Parameters &var) {
-    for (unsigned int j = 0; j < walk_len; j++) test_billiard_walk(P, p, var.diameter, lamdas, Av, lambda, var, vec);
+    nsteps += walk_len;
+    for (unsigned int j = 0; j < walk_len; j++){
+        test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec);
+    }
 
 }
 
 template <class ConvexBody, class Point, class Parameters, typename NT, typename VT>
-void test_billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT &lambda_prev,
-                   Parameters &var, VT &vec, bool first = false) {
+void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT &Av, NT &lambda_prev,
+                        const Parameters &var, VT &vec, bool first = false) {
 
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = P.dimension();
@@ -162,6 +173,8 @@ void test_billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT
 
     if (first) {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, inner_vi_ak);
+        //var.nboracles += 1.0;
+        noracles++;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;
@@ -174,6 +187,8 @@ void test_billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT
         it++;
     } else {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev, inner_vi_ak, true);
+        //var.nboracles += 1.0;
+        noracles++;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;
@@ -189,6 +204,8 @@ void test_billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT
 
     while (it<10*n) {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev, inner_vi_ak);
+        //var.nboracles += 1.0;
+        noracles++;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;

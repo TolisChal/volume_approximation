@@ -7,7 +7,7 @@
 #define TEST_COOLING_BALLS_H
 
 template <typename Polytope, typename Point, typename UParameters, typename AParameters, typename NT>
-NT test_cooling_balls(Polytope &P, UParameters &var, AParameters &var_ban, std::pair<Point,NT> &InnerBall) {
+NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
 
     typedef Ball <Point> ball;
     typedef BallIntersectPolytope <Polytope, ball> PolyBall;
@@ -49,7 +49,7 @@ NT test_cooling_balls(Polytope &P, UParameters &var, AParameters &var_ban, std::
     }*/
 
     // Save the radius of the Chebychev ball
-    var.che_rad = radius;
+    //var.che_rad = radius;
     // Move the chebychev center to the origin and apply the same shifting to the polytope
     P.shift(c.getCoefficients());
     P.normalize();
@@ -57,23 +57,32 @@ NT test_cooling_balls(Polytope &P, UParameters &var, AParameters &var_ban, std::
     VT vec;
     vec.setZero(n);
 
+    VT lamdas, Av;//, vec;
+    Av.setZero(P.num_of_hyperplanes());
+    lamdas.setZero(P.num_of_hyperplanes());
+
     if ( !test_get_sequence_of_polyballs<PolyBall, RNGType>(P, BallSet, ratios, N * nu, nu, lb, ub, radius, alpha, var,
-            rmax, vec) ){
+            rmax, vec, lamdas, Av) ){
         return -1.0;
     }
-    var.diameter = diam;
+    diam = var.diameter;
 
     NT vol = (std::pow(M_PI, n / 2.0) * (std::pow((*(BallSet.end() - 1)).radius(), n))) / (tgamma(n / 2.0 + 1));
     //std::cout<<"rad of B_m = "<<(*(BallSet.end() - 1)).radius()<<", vol of B_m = "<<vol<<std::endl;
 
     int mm = BallSet.size() + 1;
+    nballs = NT(mm - 1);
+    if (only_phases) {
+        P.free_them_all();
+        return vol;
+    }
     prob = std::pow(prob, 1.0 / NT(mm));
     NT er0 = e / (2.0 * std::sqrt(NT(mm))), er1 = (e * std::sqrt(4.0 * NT(mm) - 1)) / (2.0 * std::sqrt(NT(mm)));
 
-    vol *= (window2) ? test_esti_ratio<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, var,
+    vol *= (window2) ? test_esti_ratio<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, diam, var,
             true, (*(BallSet.end() - 1)).radius()) :
            test_esti_ratio_interval<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, prob,
-                                               vec, var, true, (*(BallSet.end() - 1)).radius());
+                                               vec, diam, var, lamdas, Av, true, (*(BallSet.end() - 1)).radius());
     //std::cout<<"vol = "<<vol <<std::endl;
 
     PolyBall Pb;
@@ -83,14 +92,14 @@ NT test_cooling_balls(Polytope &P, UParameters &var, AParameters &var_ban, std::
     er1 = er1 / std::sqrt(NT(mm) - 1.0);
 
     if (*ratioiter != 1) vol *= (!window2) ? 1 / test_esti_ratio_interval<RNGType, Point>(P, *balliter, *ratioiter, er1,
-            win_len, N * nu, prob, vec, var) : 1 / test_esti_ratio<RNGType, Point>(P, *balliter, *ratioiter, er1, win_len, N * nu,
-                                                                         var);
+            win_len, N * nu, prob, vec,diam, var, lamdas, Av) : 1 / test_esti_ratio<RNGType, Point>(P, *balliter, *ratioiter, er1, win_len, N * nu,
+                                                                         diam, var);
     for ( ; balliter < BallSet.end() - 1; ++balliter, ++ratioiter) {
         Pb = PolyBall(P, *balliter);
-        Pb.comp_diam(var.diameter, 0.0);
+        Pb.comp_diam(diam, 0.0);
         vol *= (!window2) ? 1 / test_esti_ratio_interval<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
-                win_len, N * nu, prob, vec, var) : 1 / test_esti_ratio<RNGType, Point>(Pb, *balliter, *ratioiter, er1,
-                                                                             win_len, N * nu, var);
+                win_len, N * nu, prob, vec,diam, var, lamdas, Av) : 1 / test_esti_ratio<RNGType, Point>(Pb, *balliter, *ratioiter, er1,
+                                                                             win_len, N * nu, diam, var);
         //std::cout<<"vol = "<<vol <<std::endl;
     }
 

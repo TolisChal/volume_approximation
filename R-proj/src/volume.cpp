@@ -204,7 +204,7 @@ double volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_
 
         if (type == 2 || type == 3) {
             CB = true;
-        } else if (n<=200) {
+        } else if (n<=2000) {
             CB = true;
         } else {
             CG = true;
@@ -236,7 +236,7 @@ double volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_
     if (!random_walk.isNotNull()) {
         if ( type == 1 ){
             cdhr = true;
-            if (CB) win_len = 3*n*n+400;
+            if (CB) win_len = 4*n*n+400;
         } else {
             if (CB) {
                 billiard = true;
@@ -248,7 +248,7 @@ double volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_
         }
     }else if (Rcpp::as<std::string>(random_walk).compare(std::string("CDHR")) == 0) {
         cdhr = true;
-        if (CB) win_len = 3*n*n+400;
+        if (CB) win_len = 4*n*n+400;
     } else if (Rcpp::as<std::string>(random_walk).compare(std::string("RDHR")) == 0) {
         rdhr = true;
     } else if (Rcpp::as<std::string>(random_walk).compare(std::string("BaW"))==0) {

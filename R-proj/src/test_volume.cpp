@@ -20,6 +20,11 @@
 #include <list>
 #include <math.h>
 #include <chrono>
+
+int noracles = 0;
+int nballs = 0;
+int nsteps = 0;
+
 #include "test_vol/test_cartesian_kernel.h"
 #include "test_vol/test_vars.h"
 #include "test_vol/test_hpolytope.h"
@@ -34,7 +39,7 @@
 
 
 template <class Point, class NT, class Polytope>
-double test_generic_volume(Polytope& P, unsigned int walk_step, double e,
+Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, double e,
                       Rcpp::Nullable<Rcpp::NumericVector> InnerBall, bool CG, bool CB, bool hpoly, unsigned int win_len,
                       unsigned int N, double C, double ratio, double frac,  NT lb, NT ub, NT p, NT alpha,
                       unsigned int NN, unsigned int nu, bool win2, bool ball_walk, double delta, bool cdhr,
@@ -81,19 +86,29 @@ double test_generic_volume(Polytope& P, unsigned int walk_step, double e,
     }
 
     // initialization
-    vars <NT, RNGType> var(rnum, n, walk_step, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam, rng, urdist, urdist1,
+    vars <NT, RNGType> var(rnum, n, walk_step, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam,
+                           rng, urdist, urdist1,
                            delta, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr, rdhr, billiard);
     NT vol;
 
+    //std::cout<<"volume = "<<vol<<std::endl;
     vars_ban <NT> var_ban(lb, ub, p, rmax, alpha, win_len, NN, nu, win2);
     vol = test_cooling_balls(P, var, var_ban, InnerB);
 
+    //std::cout<<"volume = "<<vol<<std::endl;
     if (vol < 0.0) {
         throw Rcpp::exception("Simulated annealing failed! Try to increase the walk length.");
     }
 
+    Rcpp::NumericVector res(5);
+    res[0] = vol*round_val;
+    res[1] = nballs;
+    res[2] = noracles;
+    //std::cout<<"noracles = "<<noracles<<std::endl;
+    res[3] = 0;
+    res[4] = nsteps;
 
-    return vol * round_val;
+    return res;
 }
 
 //' The main function for volume approximation of a convex Polytope (H-polytope, V-polytope or a zonotope)
@@ -148,7 +163,7 @@ double test_generic_volume(Polytope& P, unsigned int walk_step, double e,
 //' vol = volume(Z, random_walk = "RDHR", walk_length = 5)
 //' @export
 // [[Rcpp::export]]
-double test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_NilValue,
+Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> walk_length = R_NilValue,
                Rcpp::Nullable<double> error = R_NilValue,
                Rcpp::Nullable<Rcpp::NumericVector> inner_ball = R_NilValue,
                Rcpp::Nullable<std::string> algo = R_NilValue,

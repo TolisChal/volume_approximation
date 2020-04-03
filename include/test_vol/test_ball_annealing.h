@@ -41,6 +41,7 @@ bool test_check_convergence(ConvexBody &P, PointList &randPoints, const NT &lb, 
     for(typename std::list<Point>::iterator pit=randPoints.begin(); pit!=randPoints.end(); ++pit, i++){
 
         if (P.is_in(*pit)==-1) countsIn++;
+        //if(precheck) var.nmoracles += 1.0;
         if (i % m == 0) {
             ratios.push_back(NT(countsIn)/m);
             countsIn = 0;
@@ -79,7 +80,8 @@ bool test_check_convergence(ConvexBody &P, PointList &randPoints, const NT &lb, 
 
 
 template <typename RNGType, typename Polytope, typename ball, typename NT, typename VT, typename parameters>
-bool test_get_first_ball(Polytope &P, ball &B0, NT &ratio, NT rad1, const NT &lb, const NT &ub, const NT &alpha, NT &rmax, VT &vec, parameters &var){
+bool test_get_first_ball(Polytope &P, ball &B0, NT &ratio, NT rad1, const NT &lb, const NT &ub, const NT &alpha,
+                  NT &rmax, VT &vec, const parameters &var){
 
     typedef typename Polytope::PolytopePoint Point;
     //typedef typename Polytope::VT VT;
@@ -203,7 +205,8 @@ bool test_get_next_zonoball(std::vector<ball> &BallSet, PointList &randPoints, N
 
 template <typename PolyBall, typename RNGType,class ball, typename Polytope, typename Parameters, typename NT, typename VT>
 bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vector<NT> &ratios, const int &Ntot, const int &nu,
-                               const NT &lb, const NT &ub, NT radius, NT &alpha, Parameters &var, NT &rmax, VT &vec) {
+                               const NT &lb, const NT &ub, NT radius, NT &alpha, const Parameters &var, NT &rmax, VT &vec,
+                                    VT &lamdas, VT &Av) {
 
     typedef typename Polytope::PolytopePoint Point;
     typedef typename Polytope::MT MT;
@@ -211,7 +214,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
 
     bool fail;
     int n = P.dimension();
-    NT ratio, ratio0;
+    NT ratio, ratio0, diameter = var.diameter;
     std::list<Point> randPoints;
     ball B0;
     Point q(n);
@@ -222,12 +225,12 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
     }
     //std::cout<<"first ball computed"<<std::endl;
 
-    VT lamdas, Av;
-    lamdas.setZero(P.num_of_hyperplanes());
-    Av.setZero(P.num_of_hyperplanes());
+    //VT lamdas, Av;
+    //lamdas.setZero(P.num_of_hyperplanes());
+    //Av.setZero(P.num_of_hyperplanes());
 
     ratio0 = ratio;
-    test_rand_point_generator(P, q, Ntot, var.walk_steps, randPoints, lamdas, Av, vec, var);
+    test_rand_point_generator(P, q, Ntot, var.walk_steps, randPoints, lamdas, Av, vec, diameter, var);
     //std::cout<<Ntot<<" points sampled from P"<<std::endl;
 
     if (test_check_convergence<Point>(B0, randPoints, lb, ub, fail, ratio, nu, alpha, false, true)) {
@@ -246,8 +249,8 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
         zb_it = PolyBall(P, BallSet[BallSet.size()-1]);
         q=Point(n);
         randPoints.clear();
-        zb_it.comp_diam(var.diameter, 0.0);
-        test_rand_point_generator(zb_it, q, Ntot, var.walk_steps, randPoints, lamdas, Av, vec, var);
+        zb_it.comp_diam(diameter, 0.0);
+        test_rand_point_generator(zb_it, q, Ntot, var.walk_steps, randPoints, lamdas, Av, vec, diameter, var);
         //std::cout<<"N points sampled from BP"<<std::endl;
 
         if (test_check_convergence<Point>(B0, randPoints, lb, ub, fail, ratio, nu, alpha, false, true)) {
