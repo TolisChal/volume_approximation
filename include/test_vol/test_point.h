@@ -72,6 +72,10 @@ public:
         d = dim;
     }
 
+    void set_to_zero() {
+        coeffs.setZero(d);
+    }
+
     void set_coord(const unsigned int i, FT coord) {
         coeffs(i) = coord;
     }
@@ -152,15 +156,20 @@ public:
         return this->coeffs.dot(coeffs);
     }
 
+    FT length() const {
+        return coeffs.norm();
+    }
 
     FT squared_length() const {
+        FT norm = coeffs.norm();
 
-        FT lsq = FT(0.0);
+        return norm * norm;
+        //FT lsq = FT(0.0);
 
-        for (int i=0; i<d ; i++){
-            lsq += coeffs(i) * coeffs(i);
-        }
-        return lsq;
+        //for (int i=0; i<d ; i++){
+            //lsq += coeffs(i) * coeffs(i);
+        //}
+        //return lsq;
     }
 
     void print() const{

@@ -30,10 +30,10 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
     size_t totCount = Ntot, countIn = Ntot * ratio;
     std::vector<NT> last_W(W);
     typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
-    VT lamdas, Av, vec;
+    VT lamdas, Av;// vec;
     lamdas.setZero(Pb1.num_of_hyperplanes());
     Av.setZero(Pb1.num_of_hyperplanes());
-    vec.setZero(n);
+    Point vec(n);
 
     std::list<Point> randPoints;
     typename std::vector<NT>::iterator minmaxIt;
@@ -48,7 +48,7 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
         iter++;
 
         if (isball) {
-            p = test_get_point_in_Dsphere<RNGType, Point>(n, radius, vec, var);
+            test_get_point_in_Dsphere<RNGType>(n, radius, vec, var);
         } else {
             test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, vec, lambda, diameter, var);
         }
@@ -90,7 +90,7 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
 
 template <typename RNGType, typename Point, typename PolyBall1, typename PolyBall2, typename NT, typename Parameters, typename VT>
 NT test_esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &error, const int &W,
-        const int &Ntot, const NT &prob, VT &vec, const NT &diameter, const Parameters &var, VT &lamdas, VT &Av,
+        const int &Ntot, const NT &prob, Point &q, Point &p, const NT &diameter, const Parameters &var, VT &lamdas, VT &Av,
         bool isball = false, NT radius = 0.0) {
 
     int n = var.n, index = 0, iter = 1;
@@ -98,22 +98,22 @@ NT test_esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, con
     std::vector<NT> last_W(W);
     //typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
     //VT lamdas, Av;//, vec;
-    Av.setZero(Pb1.num_of_hyperplanes());
-    lamdas.setZero(Pb1.num_of_hyperplanes());
+    //Av.setZero(Pb1.num_of_hyperplanes());
+    //lamdas.setZero(Pb1.num_of_hyperplanes());
     //vec.setZero(n);
     NT val, sum_sq=0.0, sum=0.0, lambda;
     size_t totCount = Ntot, countIn = Ntot * ratio;
     //std::cout<<"countIn = "<<countIn<<", totCount = "<<totCount<<std::endl;
 
-    Point p(n);
+    p.set_to_zero();//(n);
 
-    if(!isball) test_uniform_first_point(Pb1, p, 1, lamdas, Av, vec, lambda, diameter, var);
+    if(!isball) test_uniform_first_point(Pb1, p, 1, lamdas, Av, q, lambda, diameter, var);
     for (int i = 0; i < W; ++i) {
 
         if (isball) {
-            p = test_get_point_in_Dsphere<RNGType, Point>(n, radius, vec, var);
+            test_get_point_in_Dsphere<RNGType>(n, radius, p, var);
         } else {
-            test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, vec, lambda, diameter, var);
+            test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, q, lambda, diameter, var);
         }
         if (Pb2.is_in(p) == -1) countIn = countIn + 1;
 
@@ -134,9 +134,9 @@ NT test_esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, con
         iter++;
 
         if (isball) {
-            p = test_get_point_in_Dsphere<RNGType, Point>(n, radius, vec, var);
+            test_get_point_in_Dsphere<RNGType>(n, radius, p, var);
         } else {
-            test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, vec, lambda, diameter, var);
+            test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, q, lambda, diameter, var);
         }
         if (Pb2.is_in(p) == -1) countIn = countIn + 1;
 

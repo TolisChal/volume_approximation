@@ -25,14 +25,14 @@ public:
     typedef Point PolytopePoint;
     typedef typename Point::FT NT;
     typedef typename std::vector<NT>::iterator viterator;
-    //using RowMatrixXd = Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    //typedef RowMatrixXd MT;
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
+    using RowMatrixXd = Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    typedef RowMatrixXd MT;
+    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MTc;
     typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
 
 private:
     MT A; //matrix A
-    MT AA;
+    MTc AA;
     VT b; // vector b, s.t.: Ax<=b
     unsigned int            _d; //dimension
     //NT maxNT = 1.79769e+308;
@@ -183,7 +183,7 @@ public:
                 A(i - 1, j - 1) = -Pin[i][j];
             }
         }
-        AA = A * A.transpose();
+        AA.noalias() = A * A.transpose();
     }
 
 
@@ -207,15 +207,16 @@ public:
     
     //Check if Point p is in H-polytope P:= Ax<=b
     int is_in(const Point &p) const {
-        NT sum;
+        //NT sum;
         int m = A.rows();
         const NT* b_data = b.data();
 
         for (int i = 0; i < m; i++) {
-            sum = *b_data - A.row(i) * p.getCoefficients();
+            if (*b_data - A.row(i) * p.getCoefficients() < NT(0)) return 0;
+            //sum = *b_data - A.row(i) * p.getCoefficients();
             b_data++;
             //Check if corresponding hyperplane is violated
-            if (sum < NT(0)) return 0;
+
         }
         return -1;
     }

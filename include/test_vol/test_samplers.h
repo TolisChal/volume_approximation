@@ -14,8 +14,8 @@
 
 
 // Pick a random direction as a normilized vector
-template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_direction(const unsigned int dim, VT &vec, const parameters &var) {
+template <typename RNGType, typename Point, typename VT, typename parameters>
+void test_get_direction(const unsigned int dim, Point &vec, const parameters &var) {
 
     //boost::normal_distribution<> rdist(0,1);
     boost::normal_distribution<> nrdist = var.urdist1;//(0,1);
@@ -27,17 +27,17 @@ Point test_get_direction(const unsigned int dim, VT &vec, const parameters &var)
     //RNGType rng(seed);
     //RNGType rng2 = var.rng;
     for (unsigned int i=0; i<dim; i++) {
-        vec(i) = nrdist(rng);
+        vec.set_coord(i, nrdist(rng));
         //normal += Xs[i] * Xs[i];
     }
-    vec *= (1.0/vec.norm());
+    vec *= (1.0 / vec.length());
     //normal=1.0/std::sqrt(normal);
 
     //for (unsigned int i=0; i<dim; i++) {
         //Xs[i] = Xs[i] * normal;
     //}
-    Point p(vec);
-    return p;
+    //Point p(vec);
+    //return p;
 
 
 
@@ -51,16 +51,17 @@ Point test_get_direction(const unsigned int dim, VT &vec, const parameters &var)
 
 // Pick a random point from a d-sphere
 template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_point_on_Dsphere(const unsigned int dim, const NT &radius, VT &vec, const parameters &var){
-    Point p = test_get_direction<RNGType, Point, NT>(dim, vec, var);
-    p = (radius == 0) ? p : radius * p;
-    return p;
+void test_get_point_on_Dsphere(const unsigned int dim, const NT &radius, Point &vec, const parameters &var){
+    test_get_direction<RNGType, Point, NT>(dim, vec, var);
+    if (radius > NT(0)) vec *= radius;
+    //vec = (radius == 0) ? p : radius * p;
+    //return p;
 }
 
 
 // Pick a random point from a d-ball
-template <typename RNGType, typename Point, typename NT, typename VT, typename parameters>
-Point test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, VT &vec, const parameters &var){
+template <typename RNGType, typename Point, typename NT, typename parameters>
+void test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, Point &vec, const parameters &var){
 
     RNGType &rng = var.rng;
     boost::random::uniform_real_distribution<> urdist = var.urdist;
@@ -68,11 +69,11 @@ Point test_get_point_in_Dsphere(const unsigned int dim, const NT &radius, VT &ve
     //NT U;
     //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     //RNGType rng2(seed);
-    Point p = test_get_direction<RNGType, Point, NT>(dim, vec, var);
+    test_get_direction<RNGType, Point, NT>(dim, vec, var);
     NT U = urdist(rng);
     U = std::pow(U, 1.0/(NT(dim)));
-    p *= (radius*U);
-    return p;
+    vec *= (radius*U);
+    //return p;
 }
 
 // ----- RANDOM POINT GENERATION FUNCTIONS ------------ //
@@ -86,7 +87,7 @@ void test_rand_point_generator(Polytope &P,
                          PointList &randPoints,
                          VT &lamdas,
                          VT &Av,
-                         VT &vec,
+                         Point &vec,
                                const NT &diameter,
                          const Parameters &var)  // constants for volume
 {
@@ -123,7 +124,7 @@ void test_uniform_first_point(Polytope &P,
                          unsigned int walk_len, // number of steps for the random walk
                          VT &lamdas,
                          VT &Av,
-                         VT &vec,
+                         Point &vec,
                          NT &lambda,
                               const NT &diameter,
                          const Parameters &var) {
@@ -146,7 +147,7 @@ void test_uniform_next_point(Polytope &P,
                         const unsigned int walk_len, // number of steps for the random walk
                         VT &lamdas,
                         VT &Av,
-                        VT &vec,
+                        Point &vec,
                         NT &lambda,
                         const NT &diameter,
                         const Parameters &var) {
@@ -159,7 +160,7 @@ void test_uniform_next_point(Polytope &P,
 
 template <class ConvexBody, class Point, class Parameters, typename NT, typename VT>
 void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT &Av, NT &lambda_prev,
-                        const Parameters &var, VT &vec, bool first = false) {
+                        const Parameters &var, Point &v, bool first = false) {
 
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = P.dimension();
@@ -167,8 +168,9 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     boost::random::uniform_real_distribution<> urdist = var.urdist;
     NT T = urdist(rng) * diameter, inner_vi_ak;
     const NT dl = 0.995;
-    vec.setZero(n);
-    Point v = test_get_direction<RNGType, Point, NT>(n, vec, var), p0 = p;
+    //vec.setZero(n);
+    test_get_direction<RNGType, Point, NT>(n, v, var);
+    Point p0 = p;
     int it = 0;
 
     if (first) {

@@ -156,12 +156,15 @@ public:
 
     void compute_reflection (Point &v, const Point &p, NT &inner_vi_ak, NT &psq, const int &facet) {
 
-        Point s = p;
-        psq = std::sqrt(s.squared_length());
-        s *= (1.0 / psq);
-        inner_vi_ak = v.dot(s);
-        s *= (-2.0 * inner_vi_ak);
-        v += s;
+        //Point s = p;
+        psq = p.length();
+        //sq
+        //psq = std::sqrt(s.squared_length());
+        //s *= (1.0 / s.length());
+        inner_vi_ak = v.dot(p) / psq;
+        //s *= (-2.0 * inner_vi_ak);
+        //v += s;
+        v += (p * (-2.0 * inner_vi_ak * (1.0 / psq)));
 
     }
 
