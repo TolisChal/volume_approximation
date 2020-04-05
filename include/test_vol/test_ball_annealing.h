@@ -219,7 +219,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
     typedef typename Polytope::MT MT;
     //typedef typename Polytope::VT VT;
 
-    bool fail;
+    bool fail, verbose = var.verbose;
     int n = P.dimension();
     NT ratio, ratio0, diameter = var.diameter;
     std::list<Point> randPoints;
@@ -230,7 +230,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
     if( !test_get_first_ball<RNGType>(P, B0, ratio, radius, lb, ub, alpha, rmax, vec, var) ) {
         return false;
     }
-    //std::cout<<"first ball computed"<<std::endl;
+    if (verbose) std::cout<<"first ball computed"<<std::endl;
 
     //VT lamdas, Av;
     //lamdas.setZero(P.num_of_hyperplanes());
@@ -239,7 +239,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
     q.set_to_zero();
     ratio0 = ratio;
     test_rand_point_generator(P, q, Ntot, var.walk_steps, randPoints, lamdas, Av, vec, diameter, var);
-    //std::cout<<Ntot<<" points sampled from P"<<std::endl;
+    if (verbose) std::cout<<Ntot<<" points sampled from P"<<std::endl;
 
     if (test_check_convergence<Point>(B0, randPoints, lb, ub, fail, ratio, nu, alpha, false, true)) {
         ratios.push_back(ratio);
@@ -247,11 +247,11 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
         ratios.push_back(ratio0);
         return true;
     }
-    //std::cout<<"not the last ball, ratio = "<<ratio<<std::endl;
+    if (verbose) std::cout<<"not the last ball, ratio = "<<ratio<<std::endl;
     if ( !test_get_next_zonoball<Point>(BallSet, randPoints, B0.radius(), ratios, lb, ub, alpha, nu) ){
         return false;
     }
-    //std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
+    if (verbose) std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
 
     while (true) {
         zb_it = PolyBall(P, BallSet[BallSet.size()-1]);
@@ -270,7 +270,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
         if ( !test_get_next_zonoball<Point>(BallSet, randPoints, B0.radius(), ratios, lb, ub, alpha, nu) ) {
             return false;
         }
-        //std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
+        if (verbose) std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
     }
 }
 

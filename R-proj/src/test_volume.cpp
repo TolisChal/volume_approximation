@@ -35,7 +35,7 @@ int nsteps = 0;
 #include "test_vol/test_ball_annealing.h"
 #include "test_vol/test_ratio_estimation.h"
 #include "test_vol/test_cooling_balls.h"
-
+#include "test_vol/test_high_cool_vol.h"
 
 
 template <class Point, class NT, class Polytope>
@@ -43,11 +43,10 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
                       Rcpp::Nullable<Rcpp::NumericVector> InnerBall, bool CG, bool CB, bool hpoly, unsigned int win_len,
                       unsigned int N, double C, double ratio, double frac,  NT lb, NT ub, NT p, NT alpha,
                       unsigned int NN, unsigned int nu, bool win2, bool ball_walk, double delta, bool cdhr,
-                      bool rdhr, bool billiard, double diam, bool rounding, int type) {
+                      bool rdhr, bool billiard, double diam, bool rounding, int type, bool verbose) {
     bool rand_only = false,
             NNN = false,
-            birk = false,
-            verbose = false;
+            birk = false;
     unsigned int n_threads = 1;
     NT round_val = 1.0, rmax = 0.0;
 
@@ -93,7 +92,11 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
 
     //std::cout<<"volume = "<<vol<<std::endl;
     vars_ban <NT> var_ban(lb, ub, p, rmax, alpha, win_len, NN, nu, win2);
-    vol = test_cooling_balls(P, var, var_ban, InnerB);
+    if (n<=300) {
+        vol = test_cooling_balls(P, var, var_ban, InnerB);
+    } else {
+        vol = test_cooling_balls_high(P, var, var_ban, InnerB);
+    }
 
     //std::cout<<"volume = "<<vol<<std::endl;
     if (vol < 0.0) {
@@ -182,7 +185,7 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
     int type = P.field("type");
 
     bool CG = false, CB = true, cdhr = false, rdhr = false, ball_walk = false, round = false, win2 = false, hpoly = false,
-            billiard = true;
+            billiard = true, verbose = false;
     unsigned int win_len = 170, N = 500 * 2 +  n * n / 2, NN = 125, nu = 10;
 
     NT C = 2.0, ratio = 1.0-1.0/(NT(n)), frac = 0.1, e, delta = -1.0, lb = 0.1, ub = 0.15, p = 0.75, rmax = 0.0,
@@ -238,6 +241,9 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
         if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("diameter")) {
             diam = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(parameters)["diameter"]);
         }
+        if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("verbose")) {
+            verbose = Rcpp::as<bool>(Rcpp::as<Rcpp::List>(parameters)["verbose"]);
+        }
     }
 
     if(type==1) {
@@ -248,7 +254,7 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
         return test_generic_volume<Point, NT>(HP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb,
                                               ub, p,
                                               alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round,
-                                              type);
+                                              type, verbose);
     } else {
         // Vpolytope
         std::cout << "This function computes volumes of H-polytopes with CB algorithm and billiard walk!" << std::endl;

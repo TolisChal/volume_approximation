@@ -94,7 +94,7 @@ NT test_esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, con
         bool isball = false, NT radius = 0.0) {
 
     int n = var.n, index = 0, iter = 1;
-    bool print = var.verbose;
+    bool verbose = var.verbose;
     std::vector<NT> last_W(W);
     //typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
     //VT lamdas, Av;//, vec;
@@ -152,7 +152,7 @@ NT test_esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, con
 
         if (index == W) index = 0;
         if (test_check_max_error(val - zp * s, val + zp * s, error)) {
-            //std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
+            if (verbose) std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
             return val;
         }
 

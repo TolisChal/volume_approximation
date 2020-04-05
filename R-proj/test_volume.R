@@ -7,7 +7,7 @@ P = gen_cube(d,'H')
 vol_vec=c()
 time_vec=c()
 for (i in 1:1) {
-  tim = system.time({ vol = test_volume(P, random_walk = "BiW", walk_length = 1, parameters = list("diameter" = 2*sqrt(d))) })
+  tim = system.time({ vol = test_volume(P, random_walk = "BiW", walk_length = 1, parameters = list("diameter" = 2*sqrt(d),"prob"=0.95, "Window"=170, "lb"=0.097, "ub"=0.12)) })
   vol_vec = c(vol_vec, vol)
   time_vec = c(time_vec, as.numeric(tim)[3])
 }
