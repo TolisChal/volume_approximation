@@ -50,8 +50,8 @@ poly_gen <- function(kind_gen, Vpoly_gen, Zono_gen, dim_gen, m_gen) {
 #' Do not use this function.
 #'
 #' @return A numerical matrix that describes the rounded polytope and contains the round value.
-rounding <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL) {
-    .Call(`_volesti_rounding`, P, random_walk, walk_length, parameters)
+rounding <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL, inner_point = NULL) {
+    .Call(`_volesti_rounding`, P, random_walk, walk_length, parameters, inner_point)
 }
 
 #' The main function for volume approximation of a convex Polytope (H-polytope, V-polytope or a zonotope)

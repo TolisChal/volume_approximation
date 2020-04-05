@@ -39,7 +39,8 @@
 Rcpp::List rounding (Rcpp::Reference P,
                               Rcpp::Nullable<std::string> random_walk = R_NilValue,
                               Rcpp::Nullable<unsigned int> walk_length = R_NilValue,
-                     Rcpp::Nullable<Rcpp::List> parameters = R_NilValue){
+                     Rcpp::Nullable<Rcpp::List> parameters = R_NilValue,
+                     Rcpp::Nullable<Rcpp::NumericVector> inner_point = R_NilValue){
 
     typedef double NT;
     typedef Cartesian<NT>    Kernel;
@@ -61,7 +62,7 @@ Rcpp::List rounding (Rcpp::Reference P,
             NN=false,
             birk=false,
             verbose=false,
-            cdhr=true, rdhr = false, ball_walk = false, billiard = false;
+            cdhr=true, rdhr = false, ball_walk = false, billiard = false, inner_given = false;
     NT delta = -1.0, diam = -1.0;
 
     unsigned int n = P.field("dimension");
@@ -69,6 +70,20 @@ Rcpp::List rounding (Rcpp::Reference P,
     unsigned int walkL = 10+n/10;
 
     std::pair <Point, NT> InnerBall;
+
+    if (inner_point.isNotNull()) {
+        std::cout<<"inner_point given"<<std::endl;
+        inner_given = true;
+        Rcpp::NumericVector InnerVec = Rcpp::as<Rcpp::NumericVector>(inner_point);
+        std::vector <NT> temp_p;
+        for (unsigned int j = 0; j < n; j++) {
+            temp_p.push_back(InnerVec[j]);
+        }
+        InnerBall.first = Point(n, temp_p.begin(), temp_p.end());
+        // store the radius of the internal ball that is given as input
+        InnerBall.second = 0.21;
+    }
+
     Rcpp::NumericMatrix Mat;
     int type = P.field("type");
 
@@ -100,7 +115,7 @@ Rcpp::List rounding (Rcpp::Reference P,
         case 1: {
             // Hpolytope
             HP.init(n, Rcpp::as<MT>(P.field("A")), Rcpp::as<VT>(P.field("b")));
-            InnerBall = HP.ComputeInnerBall();
+            if (!inner_given) InnerBall = HP.ComputeInnerBall();
             if (billiard && diam < 0.0) HP.comp_diam(diam, InnerBall.second);
             break;
         }

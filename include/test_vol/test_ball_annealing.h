@@ -249,6 +249,7 @@ bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std
     }
     if (verbose) std::cout<<"not the last ball, ratio = "<<ratio<<std::endl;
     if ( !test_get_next_zonoball<Point>(BallSet, randPoints, B0.radius(), ratios, lb, ub, alpha, nu) ){
+        if (verbose) std::cout<<"fail in first ball = "<<ratio<<std::endl;
         return false;
     }
     if (verbose) std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;

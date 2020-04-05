@@ -28,9 +28,9 @@
 #' Z = gen_rand_zonotope(2,6)
 #' ListZono = round_polytope(Z, random_walk = 'BW')
 #' @export
-round_polytope <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL){
+round_polytope <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL, inner_point = NULL){
   
-  ret_list = rounding(P, random_walk, walk_length, parameters)
+  ret_list = rounding(P, random_walk, walk_length, parameters, inner_point)
   
   #get the matrix that describes the polytope
   Mat = ret_list$Mat
