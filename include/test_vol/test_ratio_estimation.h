@@ -20,26 +20,27 @@ bool test_check_max_error(const NT &a, const NT &b, const NT &error) {
 }
 
 
-template <typename RNGType, typename Point, typename PolyBall1, typename PolyBall2, typename NT, typename Parameters>
+template <typename RNGType, typename Point, typename PolyBall1, typename PolyBall2, typename NT, typename Parameters, typename VT>
 NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &error, const int &W,
-        const int &Ntot, const NT &diameter, const Parameters &var, bool isball = false, NT radius = 0.0) {
+        const int &Ntot, const NT &diameter, Point &p, Point &vec, const Parameters &var, VT &lamdas, VT &Av,
+        bool isball = false, NT radius = 0.0) {
 
     int n = var.n, min_index = W-1, max_index = W-1, index = 0, iter = 1;
-    bool print = var.verbose;
+    bool verbose = var.verbose;
     NT min_val = std::numeric_limits<NT>::lowest(), max_val = std::numeric_limits<NT>::max(), val, lambda;
     size_t totCount = Ntot, countIn = Ntot * ratio;
-    std::vector<NT> last_W(W);
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
-    VT lamdas, Av;// vec;
-    lamdas.setZero(Pb1.num_of_hyperplanes());
-    Av.setZero(Pb1.num_of_hyperplanes());
-    Point vec(n);
+    std::vector<NT> last_W(W,0);
+    //typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
+    //VT lamdas, Av;// vec;
+    //lamdas.setZero(Pb1.num_of_hyperplanes());
+    //Av.setZero(Pb1.num_of_hyperplanes());
+    //Point vec(n);
 
-    std::list<Point> randPoints;
+    //std::list<Point> randPoints;
     typename std::vector<NT>::iterator minmaxIt;
-    typename std::list<Point>::iterator rpit;
-    Point p(n);
-
+    //typename std::list<Point>::iterator rpit;
+    //Point p(n);
+    p.set_to_zero();
     if(!var.ball_walk && !isball){
         test_uniform_first_point(Pb1,p,var.walk_steps,lamdas,Av,vec,lambda, diameter, var);
     }
@@ -48,13 +49,13 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
         iter++;
 
         if (isball) {
-            test_get_point_in_Dsphere<RNGType>(n, radius, vec, var);
+            test_get_point_in_Dsphere<RNGType>(n, radius, p, var);
         } else {
             test_uniform_next_point(Pb1, p, var.walk_steps, lamdas, Av, vec, lambda, diameter, var);
         }
-        if(Pb2.is_in(p)==-1) countIn = countIn + 1.0;
+        if(Pb2.is_in(p)==-1) countIn++;
 
-        totCount = totCount + 1.0;
+        totCount++;
         val = NT(countIn) / NT(totCount);
         last_W[index] = val;
 
@@ -77,6 +78,7 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
         }
 
         if( (max_val-min_val)/max_val<=error/2.0 ){
+            if (verbose) std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
             return val;
         }
 
@@ -84,6 +86,7 @@ NT test_esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &er
         if(index==W) index=0;
 
     }
+    if (verbose) std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
     return val;
 }
 

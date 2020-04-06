@@ -79,7 +79,7 @@ NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &va
     prob = std::pow(prob, 1.0 / NT(mm));
     NT er0 = e / (2.0 * std::sqrt(NT(mm))), er1 = (e * std::sqrt(4.0 * NT(mm) - 1)) / (2.0 * std::sqrt(NT(mm)));
 
-    vol *= (window2) ? test_esti_ratio<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, diam, var,
+    vol *= (window2) ? test_esti_ratio<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, diam, p, vec, var, lamdas, Av,
             true, (*(BallSet.end() - 1)).radius()) :
            test_esti_ratio_interval<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, prob,
                                                vec, p, diam, var, lamdas, Av, true, (*(BallSet.end() - 1)).radius());
@@ -93,13 +93,13 @@ NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &va
 
     if (*ratioiter != 1) vol *= (!window2) ? 1 / test_esti_ratio_interval<RNGType, Point>(P, *balliter, *ratioiter, er1,
             win_len, N * nu, prob, vec, p, diam, var, lamdas, Av) : 1 / test_esti_ratio<RNGType, Point>(P, *balliter, *ratioiter, er1, win_len, N * nu,
-                                                                         diam, var);
+                                                                         diam, p, vec, var, lamdas, Av);
     for ( ; balliter < BallSet.end() - 1; ++balliter, ++ratioiter) {
         Pb = PolyBall(P, *balliter);
         Pb.comp_diam(diam, 0.0);
         vol *= (!window2) ? 1 / test_esti_ratio_interval<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
-                win_len, N * nu, prob, vec, p, diam, var, lamdas, Av) : 1 / test_esti_ratio<RNGType, Point>(Pb, *balliter, *ratioiter, er1,
-                                                                             win_len, N * nu, diam, var);
+                win_len, N * nu, prob, vec, p, diam, var, lamdas, Av) : 1 / test_esti_ratio<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
+                                                                             win_len, N * nu, diam, p, vec, var, lamdas, Av);
         //std::cout<<"vol = "<<vol <<std::endl;
     }
 

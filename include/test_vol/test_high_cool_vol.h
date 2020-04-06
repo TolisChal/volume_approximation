@@ -87,8 +87,13 @@ NT test_cooling_balls_high(Polytope &P, const UParameters &var, const AParameter
     prob = std::pow(prob, 1.0 / NT(mm));
     NT er0 = e / (2.0 * std::sqrt(NT(mm))), er1 = (e * std::sqrt(4.0 * NT(mm) - 1)) / (2.0 * std::sqrt(NT(mm)));
 
-    vol += std::log(test_esti_ratio_interval<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, prob,
+    if (!window2) {
+        vol += std::log(test_esti_ratio_interval<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, prob,
                                                     vec, p, diam, var, lamdas, Av, true, (*(BallSet.end() - 1)).radius()));
+    } else {
+        vol += std::log(test_esti_ratio<RNGType, Point>(*(BallSet.end() - 1), P, *(ratios.end() - 1), er0, win_len, 1200, diam, p, vec, var, lamdas, Av,
+                                                        true, (*(BallSet.end() - 1)).radius()));
+    }
     //std::cout<<"vol = "<<vol <<std::endl;
 
     PolyBall Pb;
@@ -98,15 +103,26 @@ NT test_cooling_balls_high(Polytope &P, const UParameters &var, const AParameter
     er1 = er1 / std::sqrt(NT(mm) - 1.0);
 
     if (*ratioiter != 1) {
-        vol += std::log(NT(1) / test_esti_ratio_interval<RNGType, Point>(P, *balliter, *ratioiter, er1,
-                                                                         win_len, N * nu, prob, vec, p, diam, var,
-                                                                         lamdas, Av));
+        if (!window2) {
+            vol += std::log(NT(1) / test_esti_ratio_interval<RNGType, Point>(P, *balliter, *ratioiter, er1,
+                                                                             win_len, N * nu, prob, vec, p, diam, var,
+                                                                             lamdas, Av));
+        } else {
+            vol += std::log(NT(1) / test_esti_ratio<RNGType, Point>(P, *balliter, *ratioiter, er1, win_len, N * nu,
+                                                                    diam, p, vec, var, lamdas, Av));
+        }
     }
     for ( ; balliter < BallSet.end() - 1; ++balliter, ++ratioiter) {
         Pb = PolyBall(P, *balliter);
         Pb.comp_diam(diam, 0.0);
-        vol +=  std::log(NT(1) / test_esti_ratio_interval<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
-                win_len, N * nu, prob, vec, p, diam, var, lamdas, Av));
+        if (!window2) {
+            vol += std::log(NT(1) / test_esti_ratio_interval<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
+                                                                             win_len, N * nu, prob, vec, p, diam, var,
+                                                                             lamdas, Av));
+        } else {
+            vol += std::log(NT(1) / test_esti_ratio<RNGType, Point>(Pb, *(balliter + 1), *(ratioiter + 1), er1,
+                                                                    win_len, N * nu, diam, p, vec, var, lamdas, Av));
+        }
         //std::cout<<"vol = "<<vol <<std::endl;
     }
 
