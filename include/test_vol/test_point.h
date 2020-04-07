@@ -73,7 +73,8 @@ public:
     }
 
     void set_to_zero() {
-        coeffs.setZero(d);
+        coeffs.setConstant(FT(0));
+        //coeffs.setZero(d);
     }
 
     void set_coord(const unsigned int i, FT coord) {
