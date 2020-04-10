@@ -32,6 +32,7 @@ public:
           boost::random::uniform_real_distribution<> urdist,
           boost::normal_distribution<> urdist1,
           NT delta,
+          bool log_length,
           bool verbose,
           bool rand_only,
           bool round,
@@ -44,7 +45,7 @@ public:
     ) :
             m(m), n(n), walk_steps(walk_steps), n_threads(n_threads), err(err), error(error),
             lw(lw), up(up), L(L), che_rad(che_rad), diameter(diameter), rng(rng), urdist(urdist), urdist1(urdist1), delta(delta),
-            verbose(verbose), rand_only(rand_only), round(round), NN(NN),birk(birk), ball_walk(ball_walk),
+            log_length(log_length), verbose(verbose), rand_only(rand_only), round(round), NN(NN),birk(birk), ball_walk(ball_walk),
             cdhr_walk(cdhr_walk), rdhr_walk(rdhr_walk), bill_walk(bill_walk){};
 
     unsigned int m;
@@ -62,6 +63,7 @@ public:
     boost::random::uniform_real_distribution<> urdist;
     boost::normal_distribution<> urdist1;
     NT delta;
+    bool log_length;
     bool verbose;
     bool rand_only;
     bool round;

@@ -166,7 +166,13 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     unsigned int n = P.dimension();
     RNGType &rng = var.rng;
     boost::random::uniform_real_distribution<> urdist = var.urdist;
-    NT T = urdist(rng) * diameter, inner_vi_ak;
+    NT T, inner_vi_ak;
+    if (var.log_length) {
+        //std::cout<<"log"<<std::endl;
+        T = -std::log(NT(urdist(rng))) * diameter;
+    } else {
+        T = NT(urdist(rng)) * diameter;
+    }
     const NT dl = 0.995;
     //vec.setZero(n);
     test_get_direction<RNGType, Point, NT>(n, v, var);
