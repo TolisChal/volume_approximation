@@ -185,8 +185,9 @@ void rand_point_generator(Polytope &P,
                          const unsigned int rnum,
                          const unsigned int walk_len,
                          PointList &randPoints,
-                         const Parameters &var)  // constants for volume
+                         Parameters &var)  // constants for volume
 {
+    var.nsteps2 += rnum * walk_len;
     typedef typename Parameters::RNGType RNGType;
     typedef typename Point::FT NT;
     unsigned int n = var.n;
@@ -256,8 +257,8 @@ void rand_point_generator(BallPoly &PBLarge,
                          PointList &randPoints,
                          const BallPoly &PBSmall,
                          unsigned int &nump_PBSmall,
-                         const Parameters &var) {  // constants for volume
-
+                         Parameters &var) {  // constants for volume
+    var.nsteps2 += rnum * walk_len;
     typedef typename Point::FT NT;
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n;
@@ -329,7 +330,8 @@ void uniform_first_point(Polytope &P,
                          VT &lamdas,
                          VT &Av,
                          NT &lambda,
-                         const Parameters &var) {
+                         Parameters &var) {
+    var.nsteps2 = var.nsteps2 + NT(walk_len);
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n, rand_coord;
     NT kapa, ball_rad = var.delta;
@@ -393,7 +395,8 @@ void uniform_next_point(Polytope &P,
                         VT &lamdas,
                         VT &Av,
                         NT &lambda,
-                        const Parameters &var) {
+                        Parameters &var) {
+    var.nsteps2 += walk_len;
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = var.n, rand_coord;
     boost::random::uniform_int_distribution<> uidist(0, n - 1);
@@ -477,6 +480,7 @@ void billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT &lam
     if (first) {
 
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av);
+        var.noracles2++;
         if (T <= pbpair.first) {
             p = (T * v) + p;
             lambda_prev = T;
@@ -491,6 +495,7 @@ void billiard_walk(ConvexBody &P, Point &p, NT diameter, VT &Ar, VT &Av, NT &lam
     while (it<10*n) {
 
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev);
+        var.noracles2++;
         if (T <= pbpair.first) {
             p = (T * v) + p;
             lambda_prev = T;

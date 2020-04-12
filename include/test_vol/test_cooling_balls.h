@@ -71,7 +71,7 @@ NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &va
     //return vol;
 
     int mm = BallSet.size() + 1;
-    nballs = NT(mm - 1);
+    nballs = mm - 1;
     if (only_phases) {
         P.free_them_all();
         return vol;

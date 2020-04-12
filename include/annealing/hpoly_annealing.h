@@ -8,7 +8,7 @@
 
 
 template <typename Hpolytope, typename ZonoHP, typename MT, typename VT, typename Parameters, typename NT>
-void comp_diam_hpoly_zono_inter(ZonoHP &ZHP, const MT &G, const MT &AG, const VT &b, const Parameters &var,
+void comp_diam_hpoly_zono_inter(ZonoHP &ZHP, const MT &G, const MT &AG, const VT &b, Parameters &var,
         std::vector<NT> &diams_inter) {
 
     typedef typename Hpolytope::PolytopePoint Point;
@@ -47,7 +47,7 @@ void comp_diam_hpoly_zono_inter(ZonoHP &ZHP, const MT &G, const MT &AG, const VT
 
 template <typename Polytope, typename HPolytope, typename VT, typename NT, typename Parameters>
 bool get_first_poly(Polytope &P, HPolytope &HP, VT &Zs_max_gl, const NT &lb, const NT &up_lim, NT &ratio,
-        const Parameters &var){
+        Parameters &var){
 
     typedef typename Polytope::PolytopePoint Point;
     typedef typename Polytope::MT MT;

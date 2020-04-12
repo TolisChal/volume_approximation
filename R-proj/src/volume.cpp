@@ -67,7 +67,7 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
             InnerB.first = P.get_mean_of_vertices();
             InnerB.second = 0.0;
             vars <NT, RNGType> var2(1, n, 1, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, 2 * P.get_max_vert_norm(),
-                                    rng, urdist, urdist1, -1, verbose, rand_only, rounding, NNN, birk, ball_walk,
+                                    0.0,0.0,rng, urdist, urdist1, -1, verbose, rand_only, rounding, NNN, birk, ball_walk,
                                     cdhr, rdhr, billiard);
             std::pair <NT, NT> res_round = rounding_min_ellipsoid(P, InnerB, var2);
             round_val = res_round.first;
@@ -96,11 +96,11 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
     }
 
     // initialization
-    vars<NT, RNGType> var(rnum,n,walk_step,n_threads,0.0,e,0,0.0,0, InnerB.second, diam, rng,urdist,urdist1,
+    vars<NT, RNGType> var(rnum,n,walk_step,n_threads,0.0,e,0,0.0,0, InnerB.second, diam,0.0,0.0, rng,urdist,urdist1,
                           delta,verbose,rand_only,rounding,NNN,birk,ball_walk,cdhr,rdhr, billiard);
     NT vol;
     if (CG) {
-        vars<NT, RNGType> var2(rnum, n, 10 + n / 10, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam, rng,
+        vars<NT, RNGType> var2(rnum, n, 10 + n / 10, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam,0.0,0.0, rng,
                                urdist, urdist1, delta, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr,
                                rdhr, billiard);
         vars_g<NT, RNGType> var1(n, walk_step, N, win_len, 1, e, InnerB.second, rng, C, frac, ratio, delta, verbose,
@@ -125,10 +125,18 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
     Rcpp::NumericVector res(5);
     res[0] = vol*round_val;
     res[1] = nballs2;
-    res[2] = nsteps2*2;
-    //std::cout<<"noracles = "<<noracles<<std::endl;
     res[3] = 0;
-    res[4] = nsteps2;
+    if (CG) {
+        res[2] = nsteps2 * 2;
+        //std::cout<<"noracles = "<<noracles<<std::endl;
+
+        res[4] = nsteps2;
+    } else {
+        res[2] = var.noracles2;
+        //std::cout<<"noracles = "<<noracles<<std::endl;
+
+        res[4] = var.nsteps2;
+    }
 
     return res;
 }

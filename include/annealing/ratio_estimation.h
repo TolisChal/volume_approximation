@@ -22,7 +22,7 @@ bool check_max_error(const NT &a, const NT &b, const NT &error) {
 
 template <typename RNGType, typename Point, typename PolyBall1, typename PolyBall2, typename NT, typename Parameters>
 NT esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &error, const int &W,
-        const int &Ntot, const Parameters &var, bool isball = false, NT radius = 0.0) {
+        const int &Ntot, Parameters &var, bool isball = false, NT radius = 0.0) {
 
     int n = var.n, min_index = W-1, max_index = W-1, index = 0, iter = 1;
     bool print = var.verbose;
@@ -91,7 +91,7 @@ NT esti_ratio(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &error, 
 
 template <typename RNGType, typename Point, typename PolyBall1, typename PolyBall2, typename NT, typename Parameters>
 NT esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT &error, const int &W,
-        const int &Ntot, const NT &prob, const Parameters &var, bool isball = false, NT radius = 0.0) {
+        const int &Ntot, const NT &prob, Parameters &var, bool isball = false, NT radius = 0.0) {
 
     int n = var.n, index = 0, iter = 1;
     bool print = var.verbose;
