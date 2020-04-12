@@ -43,7 +43,7 @@ std::pair <NT, NT> rounding_min_ellipsoid(Polytope &P , const std::pair<Point,NT
         // 3. Sample points from P
         unsigned int num_of_samples = 10*n;//this is the number of sample points will used to compute min_ellipoid
         randPoints.clear();
-        rand_point_generator(P, p, num_of_samples, 10 + n*10, randPoints, var2);
+        rand_point_generator(P, p, num_of_samples, 10 + n*20, randPoints, var2);
         /*NT current_dist, max_dist;
         for(typename std::list<Point>::iterator pit=randPoints.begin(); pit!=randPoints.end(); ++pit){
             current_dist=(*pit-c).squared_length();

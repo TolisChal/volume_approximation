@@ -43,7 +43,7 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
                       Rcpp::Nullable<Rcpp::NumericVector> InnerBall, bool CG, bool CB, bool hpoly, unsigned int win_len,
                       unsigned int N, double C, double ratio, double frac,  NT lb, NT ub, NT p, NT alpha,
                       unsigned int NN, unsigned int nu, bool win2, bool ball_walk, double delta, bool cdhr,
-                      bool rdhr, bool billiard, double diam, bool rounding, int type, bool verbose, bool log_length) {
+                      bool rdhr, bool billiard, double diam, bool rounding, int type, bool verbose, bool log_length, int bref) {
     bool rand_only = false,
             NNN = false,
             birk = false;
@@ -85,7 +85,7 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
     }
 
     // initialization
-    vars <NT, RNGType> var(rnum, n, walk_step, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam,
+    vars <NT, RNGType> var(rnum, n, walk_step, n_threads, 0.0, e, bref, 0.0, 0, InnerB.second, diam,
                            rng, urdist, urdist1,
                            delta,log_length, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr, rdhr, billiard);
     NT vol;
@@ -186,7 +186,7 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
 
     bool CG = false, CB = true, cdhr = false, rdhr = false, ball_walk = false, round = false, win2 = false, hpoly = false,
             billiard = true, verbose = false, log_length = false;
-    unsigned int win_len = 170, N = 500 * 2 +  n * n / 2, NN = 125, nu = 10;
+    unsigned int win_len = 170, N = 500 * 2 +  n * n / 2, NN = 125, nu = 10, bref = 10*n;
 
     NT C = 2.0, ratio = 1.0-1.0/(NT(n)), frac = 0.1, e, delta = -1.0, lb = 0.1, ub = 0.15, p = 0.75, rmax = 0.0,
             alpha = 0.2, diam = -1.0;
@@ -247,6 +247,9 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
         if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("log_length")) {
             log_length = Rcpp::as<bool>(Rcpp::as<Rcpp::List>(parameters)["log_length"]);
         }
+        if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("bref")) {
+            bref = Rcpp::as<int>(Rcpp::as<Rcpp::List>(parameters)["bref"]);
+        }
 
     }
 
@@ -258,7 +261,7 @@ Rcpp::NumericVector test_volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int
         return test_generic_volume<Point, NT>(HP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb,
                                               ub, p,
                                               alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round,
-                                              type, verbose, log_length);
+                                              type, verbose, log_length, bref);
     } else {
         // Vpolytope
         std::cout << "This function computes volumes of H-polytopes with CB algorithm and billiard walk!" << std::endl;

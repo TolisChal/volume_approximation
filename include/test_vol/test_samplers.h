@@ -168,7 +168,6 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     boost::random::uniform_real_distribution<> urdist = var.urdist;
     NT T, inner_vi_ak;
     if (var.log_length) {
-        //std::cout<<"log"<<std::endl;
         T = -std::log(NT(urdist(rng))) * diameter;
     } else {
         T = NT(urdist(rng)) * diameter;
@@ -209,8 +208,8 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
         P.compute_reflection(v, p, inner_vi_ak, pbpair.second);
         it++;
     }
-
-    while (it<10*n) {
+    //std::cout<<"bref = "<<var.lw<<std::endl;
+    while (it<var.lw) {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev, inner_vi_ak);
         //var.nboracles += 1.0;
         noracles++;
@@ -228,7 +227,7 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
         it++;
     }
 
-    if(it == 10*n){
+    if(it == var.lw){
         std::cout<<"limit reached"<<std::endl;
         p = p0;
     }
