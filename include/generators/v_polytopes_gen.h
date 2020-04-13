@@ -142,4 +142,54 @@ Polytope random_vpoly_incube(unsigned int d, unsigned int k) {
 
 }
 
+
+template <class Polytope, class RNGType>
+Polytope dual_knapsack(int d) {
+
+    typedef typename Polytope::MT    MT;
+    typedef typename Polytope::VT    VT;
+    typedef typename Polytope::PolytopePoint Point;
+    typedef typename Point::FT NT;
+
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    RNGType rng(seed);
+    boost::random::uniform_int_distribution<> uidist(-100, 100);
+
+    Polytope P, Ptemp;
+    MT A;
+    VT b;
+
+    A.resize(d, 2 * d);
+    b.resize(2 * d);
+
+    A << MT::Identity(d,d), -MT::Identity(d,d);
+    b.setConstant(NT(1));
+
+    MT A2(2 * d, d);
+    A2 = A.transpose();
+
+    Ptemp.init(d, A2, b);
+    Point p(d);
+
+    while (true) {
+
+        for (int i = 0; i < d; ++i) {
+            p.set_coord(i, uidist(rng));
+        }
+        //p = get_point_in_Dsphere<RNGType, Point >(d, NT(5));
+        if (Ptemp.is_in(p) == 0) {
+            Ptemp.free_them_all();
+            break;
+        }
+
+    }
+
+    A2.conservativeResize(A2.rows()+1, A2.cols());
+    A2.row(2 * d) = p.getCoefficients();
+
+    P.init(d, A2, b);
+    return P;
+
+}
+
 #endif
