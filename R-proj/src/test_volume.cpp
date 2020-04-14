@@ -21,9 +21,9 @@
 #include <math.h>
 #include <chrono>
 
-int noracles = 0;
-int nballs = 0;
-int nsteps = 0;
+unsigned int noracles = 0;
+unsigned int nballs = 0;
+unsigned int nsteps = 0;
 
 #include "test_vol/test_cartesian_kernel.h"
 #include "test_vol/test_vars.h"

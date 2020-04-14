@@ -1,32 +1,37 @@
 library(volesti)
 
-dims = seq(from = 210, to = 500, by =10)
+N=10
 
-time_cb=c()
-time_cg=c()
-
-for (d in dims) {
+vol_vec=matrix(0,1,N)
+steps_vec = matrix(0,1,N)
+boc_vec = matrix(0,1,N)
+nballs_vec = matrix(0,1,N)
+time_vec=matrix(0,1,N)
+d=500
   
   P = gen_cube(d, 'H')
   
   tims1=0
   tims2=0
-  
-  for (j in 1:5) {
-    tim1 = system.time({ vol = test_volume(P) })
-    tim2 = system.time({ vol = volume(P, algo='CG') })
+  count = 1
+  for (j in 1:N) {
+    print(j)
+    tim = system.time({ vol = test_volume(P, random_walk = "BiW", walk_length = 1, parameters = list("diameter" = 2*sqrt(d), "Window" = 250, "log_length"=TRUE, "verbose"=TRUE)) })
+    #tim2 = system.time({ vol = volume(P, algo='CG') })
     
-    tims1 = tims1 + as.numeric(tim1)[3]
-    tims2 = tims2 + as.numeric(tim2)[3]
+    vol_vec[count,j] = vol[1]
+    nballs_vec[count,j] = vol[2]
+    boc_vec[count,j] = vol[3]
+    steps_vec[count,j] = vol[5]
+    time_vec[count,j] = as.numeric(tim)[3]
+    
+    save(vol_vec, file = "vol_cb_cube_500_1000.RData")
+    save(nballs_vec, file = "nballs_cb_cube_500_1000.RData")
+    save(boc_vec, file = "boc_cb_cube_500_1000.RData")
+    save(time_vec, file = "times_cb_cube_500_1000.RData")
+    save(steps_vec, file = "steps_cb_cube_500_1000.RData")
   
   }
   
-  time_cb = c(time_cb, tims1/5)
-  time_cg = c(time_cg, tims2/5)
+ 
   
-  save(time_cb, file = "times_cb_210_500.RData")
-  save(time_cg, file = "times_cg_210_500.RData")
-  
-  print(d)
-  
-}

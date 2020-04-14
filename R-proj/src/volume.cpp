@@ -14,9 +14,9 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 
-int noracles2 = 0;
-int nballs2 = 0;
-int nsteps2 = 0;
+unsigned int noracles2 = 0;
+unsigned int nballs2 = 0;
+unsigned int nsteps2 = 0;
 
 #include "volume.h"
 #include "cooling_balls.h"
