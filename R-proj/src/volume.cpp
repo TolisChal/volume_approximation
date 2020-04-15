@@ -7,13 +7,14 @@
 
 //Contributed and/or modified by Apostolos Chalkis, as part of Google Summer of Code 2018 program.
 
+
 #include <Rcpp.h>
 #include <RcppEigen.h>
 #include <boost/random.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
-
+#define VOLESTI_DEBUG
 unsigned int noracles2 = 0;
 unsigned int nballs2 = 0;
 unsigned int nsteps2 = 0;
@@ -28,12 +29,11 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
                       Rcpp::Nullable<Rcpp::NumericVector> InnerBall, bool CG, bool CB, bool hpoly, unsigned int win_len,
                       unsigned int N, double C, double ratio, double frac,  NT lb, NT ub, NT p, NT alpha,
                       unsigned int NN, unsigned int nu, bool win2, bool ball_walk, double delta, bool cdhr,
-                      bool rdhr, bool billiard, double diam, bool rounding, int type)
+                      bool rdhr, bool billiard, double diam, bool rounding, int type, bool verbose)
 {
     bool rand_only=false,
          NNN=false,
-         birk=false,
-         verbose = false;
+         birk=false;
     unsigned int n_threads=1;
     NT round_val = 1.0, rmax = 0.0;
 
@@ -63,19 +63,21 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
     } else if(type == 2 && CB) {
         if (rounding) {
 
-            //std::cout<<"hello2"<<std::endl;
+            if (verbose) std::cout<<"rounding started"<<std::endl;
             InnerB.first = P.get_mean_of_vertices();
             InnerB.second = 0.0;
             vars <NT, RNGType> var2(1, n, 1, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, 2 * P.get_max_vert_norm(),
                                     0.0,0.0,rng, urdist, urdist1, -1, verbose, rand_only, rounding, NNN, birk, ball_walk,
                                     cdhr, rdhr, billiard);
             std::pair <NT, NT> res_round = rounding_min_ellipsoid(P, InnerB, var2);
+            if (verbose) std::cout<<"rounding ended"<<std::endl;
             round_val = res_round.first;
 
             rounding = false;
             InnerB.second = 0.0;
             InnerB.first = Point(n);
             get_vpoly_center(P);
+            if (verbose) std::cout<<"center of balls computed"<<std::endl;
             rmax = P.get_max_vert_norm();
         } else {
             InnerB.second = 0.0;
@@ -111,7 +113,7 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
         if (!hpoly) {
             vol = vol_cooling_balls(P, var, var_ban, InnerB);
         } else {
-            vars_g <NT, RNGType> varg(n, 1, N, 4 * n * n + 500, 1, e, InnerB.second, rng, C, frac, ratio, delta,
+            vars_g <NT, RNGType> varg(n, 1, N, 5 * n * n + 500, 1, e, InnerB.second, rng, C, frac, ratio, delta,
                                       verbose, rand_only, false, false, birk, false, true, false);
             vol = vol_cooling_hpoly < HPolytope < Point > > (P, var, var_ban, varg, InnerB);
         }
@@ -215,7 +217,7 @@ Rcpp::NumericVector volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> wal
     int type = P.field("type");
 
     bool CG = false, CB = false, cdhr = false, rdhr = false, ball_walk = false, round = false, win2 = false, hpoly = false,
-          billiard = false;
+          billiard = false, verbose = false;
     unsigned int win_len = 4*n*n+500, N = 500 * 2 +  n * n / 2, NN = 120 + (n*n)/10, nu = 10;
 
     NT C = 2.0, ratio = 1.0-1.0/(NT(n)), frac = 0.1, e, delta = -1.0, lb = 0.1, ub = 0.15, p = 0.75, rmax = 0.0,
@@ -356,6 +358,9 @@ Rcpp::NumericVector volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> wal
         if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("diameter")) {
             diam = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(parameters)["diameter"]);
         }
+        if (Rcpp::as<Rcpp::List>(parameters).containsElementNamed("verbose")) {
+            verbose = Rcpp::as<bool>(Rcpp::as<Rcpp::List>(parameters)["verbose"]);
+        }
     }
 
     switch(type) {
@@ -364,21 +369,21 @@ Rcpp::NumericVector volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> wal
             Hpolytope HP;
             HP.init(n, Rcpp::as<MT>(P.field("A")), Rcpp::as<VT>(P.field("b")));
             return generic_volume<Point, NT>(HP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb, ub, p,
-                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type);
+                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type, verbose);
         }
         case 2: {
             // Vpolytope
             Vpolytope VP;
             VP.init(n, Rcpp::as<MT>(P.field("V")), VT::Ones(Rcpp::as<MT>(P.field("V")).rows()));
             return generic_volume<Point, NT>(VP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb, ub, p,
-                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type);
+                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type, verbose);
         }
         case 3: {
             // Zonotope
             zonotope ZP;
             ZP.init(n, Rcpp::as<MT>(P.field("G")), VT::Ones(Rcpp::as<MT>(P.field("G")).rows()));
             return generic_volume<Point, NT>(ZP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb, ub, p,
-                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type);
+                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type, verbose);
         }
         case 4: {
             // Intersection of two V-polytopes
@@ -391,7 +396,7 @@ Rcpp::NumericVector volume (Rcpp::Reference P,  Rcpp::Nullable<unsigned int> wal
             Rcpp::NumericVector InnerVec(n + 1);
             if (!VPcVP.is_feasible()) throw Rcpp::exception("Empty set!");
             return generic_volume<Point, NT>(VPcVP, walkL, e, inner_ball, CG, CB, hpoly, win_len, N, C, ratio, frac, lb, ub, p,
-                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type);
+                                             alpha, NN, nu, win2, ball_walk, delta, cdhr, rdhr, billiard, diam, round, type, verbose);
         }
     }
 

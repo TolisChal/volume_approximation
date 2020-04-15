@@ -183,7 +183,7 @@ bool get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vec
 
     typedef typename Polytope::PolytopePoint Point;
     typedef typename Polytope::MT MT;
-    bool fail;
+    bool fail, verbose = var.verbose;
     int n = P.dimension();
     NT ratio, ratio0;
     std::list<Point> randPoints;
@@ -191,12 +191,15 @@ bool get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vec
     Point q(n);
     PolyBall zb_it;
 
+    if (verbose) std::cout<<"first ball computation..."<<std::endl;
     if( !get_first_ball<RNGType>(P, B0, ratio, radius, lb, ub, alpha, rmax) ) {
         return false;
     }
+    if (verbose) std::cout<<"first ball computed"<<std::endl;
 
     ratio0 = ratio;
     rand_point_generator(P, q, Ntot, var.walk_steps, randPoints, var);
+    if (verbose) std::cout<<Ntot<<" points sampled from P"<<std::endl;
 
     if (check_convergence<Point>(B0, randPoints, lb, ub, fail, ratio, nu, alpha, false, true)) {
         ratios.push_back(ratio);
@@ -204,9 +207,11 @@ bool get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vec
         ratios.push_back(ratio0);
         return true;
     }
+    if (verbose) std::cout<<"not the last ball, ratio = "<<ratio<<std::endl;
     if ( !get_next_zonoball<Point>(BallSet, randPoints, B0.radius(), ratios, lb, ub, alpha, nu) ){
         return false;
     }
+    if (verbose) std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
 
     while (true) {
         zb_it = PolyBall(P, BallSet[BallSet.size()-1]);
@@ -224,6 +229,7 @@ bool get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vec
         if ( !get_next_zonoball<Point>(BallSet, randPoints, B0.radius(), ratios, lb, ub, alpha, nu) ) {
             return false;
         }
+        if (verbose) std::cout<<"number of balls = "<<BallSet.size()+1<<std::endl;
     }
 }
 

@@ -55,13 +55,20 @@ NT vol_cooling_hpoly (Zonotope &ZP, UParameters &var, AParameters &var_ban, GPar
     UParameters var3 = var;
     var3.cdhr_walk = true;
     var3.ball_walk = var3.rdhr_walk = var3.bill_walk = false;
+    if (verbose) std::cout<<"computing first hpoly"<<std::endl;
     if ( !get_first_poly(ZP, HP, Zs_max, lb, ub, ratio, var3) ) {
         return -1.0;
     }
+    if (verbose) std::cout<<"first hpoly computed"<<std::endl;
+    //if (verbose) std::cout<<HP.get_mat().cols()<<"\n"<<std::endl;
+    //if (verbose) std::cout<<HP.get_mat().rows()<<"\n"<<std::endl;
+    //if (verbose) std::cout<<HP.get_vec().size()<<"\n"<<std::endl;
     //Hpolytope HP2 = HP;
-    HP.normalize();
+    //HP.normalize();
+    //if (verbose) std::cout<<"hpoly normalized"<<std::endl;
 
     std::pair<Point, NT> InnerBall = HP.ComputeInnerBall();
+    if (verbose) std::cout<<" inner ball of hpoly computed"<<std::endl;
 
     typedef ZonoIntersectHPoly<Zonotope , Hpolytope > ZonoHP;
     std::vector<Hpolytope > HPolySet;
@@ -70,10 +77,12 @@ NT vol_cooling_hpoly (Zonotope &ZP, UParameters &var, AParameters &var_ban, GPar
     ZonoHP zb1, zb2;
     std::vector<NT> diams_inter;
 
+    if (verbose) std::cout<<"computing annealing..."<<std::endl;
     if ( !get_sequence_of_zonopolys<ZonoHP>(ZP, HP, HPolySet, Zs_max, ratios, N*nu, nu, lb, ub, alpha, var,
             var3, diams_inter) ){
         return -1.0;
     }
+    if (verbose) std::cout<<"annealing computed"<<std::endl;
     var.diameter = diam0;
 
     int mm=HPolySet.size()+2;
@@ -84,13 +93,19 @@ NT vol_cooling_hpoly (Zonotope &ZP, UParameters &var, AParameters &var_ban, GPar
         Her = e/(2.0*std::sqrt(NT(mm2)));
 
     var_g.error = Her;
-    vol = volume_gaussian_annealing(HP, var_g, var, InnerBall);
+    if (verbose) std::cout<<"HP vol computing..."<<std::endl;
+    Hpolytope HP34 = HP;
+    std::pair<NT,NT> res_round = rounding_min_ellipsoid(HP34,InnerBall,var);
+    round_value = res_round.first;
+    InnerBall = HP34.ComputeInnerBall();
+    vol = round_value*volume_gaussian_annealing(HP34, var_g, var, InnerBall);
+    if (verbose) std::cout<<"vol = "<<vol<<std::endl;
 
     if (!window2) {
         UParameters var2 = var;
         var2.cdhr_walk = true;
         var2.ball_walk = var2.rdhr_walk = var2.bill_walk = false;
-        var2.walk_steps = 10+2*n;
+        var2.walk_steps = 10+10*n;
         vol *= esti_ratio_interval<RNGType, Point>(HP, ZP, ratio, er0, win_len, N*nu, prob, var2);
     } else {
         vol *= esti_ratio<RNGType, Point>(HP, ZP, ratio, er0, var_g.W, N*nu, var);

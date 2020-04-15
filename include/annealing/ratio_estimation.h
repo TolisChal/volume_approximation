@@ -102,7 +102,7 @@ NT esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT
     lamdas.setZero(Pb1.num_of_hyperplanes());
     NT val, sum_sq=0.0, sum=0.0, lambda;
     size_t totCount = Ntot, countIn = Ntot * ratio;
-    //std::cout<<"countIn = "<<countIn<<", totCount = "<<totCount<<std::endl;
+    if (print) std::cout<<"countIn = "<<countIn<<", totCount = "<<totCount<<std::endl;
 
     Point p(n);
     Point p_prev=p;
@@ -153,7 +153,7 @@ NT esti_ratio_interval(PolyBall1 &Pb1, PolyBall2 &Pb2, const NT &ratio, const NT
 
         if (index == W) index = 0;
         if (check_max_error(val - zp * s, val + zp * s, error)) {
-            //if (print) std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
+            if (print) std::cout << "final rejection ratio = " << val << " | total points = " << totCount << std::endl;
             return val;
         }
 
