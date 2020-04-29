@@ -86,7 +86,6 @@ NT vol_cooling_hpoly (Zonotope &ZP, UParameters &var, AParameters &var_ban, GPar
     var.diameter = diam0;
 
     int mm=HPolySet.size()+2;
-    nballs2 = mm;
     int mm2=mm+1;
     prob = std::pow(prob, 1.0/NT(mm2));
     NT er0 = e/(2.0*std::sqrt(NT(mm2))), er1 = (e*std::sqrt(2.0*NT(mm2)-1))/(std::sqrt(2.0*NT(mm2))),
@@ -100,6 +99,7 @@ NT vol_cooling_hpoly (Zonotope &ZP, UParameters &var, AParameters &var_ban, GPar
     InnerBall = HP34.ComputeInnerBall();
     vol = round_value*volume_gaussian_annealing(HP34, var_g, var, InnerBall);
     if (verbose) std::cout<<"vol = "<<vol<<std::endl;
+    nballs2 = mm;
 
     if (!window2) {
         UParameters var2 = var;
