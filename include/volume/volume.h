@@ -239,8 +239,8 @@ NT volume(Polytope &P,
 // Ben Cousins, Santosh Vempala
 template <typename Polytope, typename UParameters, typename GParameters, typename Point, typename NT>
 NT volume_gaussian_annealing(Polytope &P,
-                             GParameters & var,  // constans for volume
-                             UParameters & var2,
+                             GParameters &var,  // constans for volume
+                             UParameters &var2,
                              std::pair<Point,NT> InnerBall) {
     //typedef typename Polytope::MT 	MT;
     typedef typename Polytope::VT 	VT;

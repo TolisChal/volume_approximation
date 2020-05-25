@@ -15,9 +15,9 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 #define VOLESTI_DEBUG
-unsigned int noracles2 = 0;
+//unsigned int noracles2 = 0;
 unsigned int nballs2 = 0;
-unsigned int nsteps2 = 0;
+//unsigned int nsteps2 = 0;
 
 #include "volume.h"
 #include "cooling_balls.h"
@@ -101,19 +101,22 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
     vars<NT, RNGType> var(rnum,n,walk_step,n_threads,0.0,e,0,0.0,0, InnerB.second, diam,0.0,0.0, rng,urdist,urdist1,
                           delta,verbose,rand_only,rounding,NNN,birk,ball_walk,cdhr,rdhr, billiard);
     NT vol;
+    NT cg_steps;
     if (CG) {
         vars<NT, RNGType> var2(rnum, n, 10 + n / 10, n_threads, 0.0, e, 0, 0.0, 0, InnerB.second, diam,0.0,0.0, rng,
                                urdist, urdist1, delta, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr,
                                rdhr, billiard);
-        vars_g<NT, RNGType> var1(n, walk_step, N, win_len, 1, e, InnerB.second, rng, C, frac, ratio, delta, verbose,
+        vars_g<NT, RNGType> var1(n, walk_step, N, win_len, 1, e, InnerB.second, rng, C, frac, ratio, delta,0.0,0.0, verbose,
                                  rand_only, rounding, NN, birk, ball_walk, cdhr, rdhr);
+
         vol = volume_gaussian_annealing(P, var1, var2, InnerB);
+        cg_steps = var1.nsteps2;
     } else if (CB) {
         vars_ban <NT> var_ban(lb, ub, p, rmax, alpha, win_len, NN, nu, win2);
         if (!hpoly) {
             vol = vol_cooling_balls(P, var, var_ban, InnerB);
         } else {
-            vars_g <NT, RNGType> varg(n, 1, N, 5 * n * n + 500, 1, e, InnerB.second, rng, C, frac, ratio, delta,
+            vars_g <NT, RNGType> varg(n, 1, N, 5 * n * n + 500, 1, e, InnerB.second, rng, C, frac, ratio, delta, 0.0,0.0,
                                       verbose, rand_only, false, false, birk, false, true, false);
             vol = vol_cooling_hpoly < HPolytope < Point > > (P, var, var_ban, varg, InnerB);
         }
@@ -129,10 +132,10 @@ Rcpp::NumericVector generic_volume(Polytope& P, unsigned int walk_step, double e
     res[1] = nballs2;
     res[3] = 0;
     if (CG) {
-        res[2] = nsteps2 * 2;
+        res[2] = cg_steps * 2;
         //std::cout<<"noracles = "<<noracles<<std::endl;
 
-        res[4] = nsteps2;
+        res[4] = cg_steps;
     } else {
         res[2] = var.noracles2;
         //std::cout<<"noracles = "<<noracles<<std::endl;

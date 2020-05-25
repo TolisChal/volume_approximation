@@ -14,7 +14,7 @@ NT log_gamma_function(NT x) {
 }
 
 template <typename Polytope, typename Point, typename UParameters, typename AParameters, typename NT>
-NT test_cooling_balls_high(Polytope &P, const UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
+NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
 
     typedef Ball <Point> ball;
     typedef BallIntersectPolytope <Polytope, ball> PolyBall;
@@ -79,7 +79,7 @@ NT test_cooling_balls_high(Polytope &P, const UParameters &var, const AParameter
     //return vol;
 
     int mm = BallSet.size() + 1;
-    nballs = NT(mm - 1);
+    var.nballs = NT(mm - 1);
     if (only_phases) {
         P.free_them_all();
         return vol;

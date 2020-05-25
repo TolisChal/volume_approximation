@@ -212,7 +212,7 @@ bool test_get_next_zonoball(std::vector<ball> &BallSet, PointList &randPoints, N
 
 template <typename PolyBall, typename RNGType,class ball, typename Polytope, typename Parameters, typename NT, typename Point, typename VT>
 bool test_get_sequence_of_polyballs(Polytope &P, std::vector<ball> &BallSet, std::vector<NT> &ratios, const int &Ntot, const int &nu,
-                               const NT &lb, const NT &ub, NT radius, NT &alpha, const Parameters &var, NT &rmax, Point &vec,
+                               const NT &lb, const NT &ub, NT radius, NT &alpha, Parameters &var, NT &rmax, Point &vec,
                                     Point &q, VT &lamdas, VT &Av) {
 
     //typedef typename Polytope::PolytopePoint Point;

@@ -89,7 +89,7 @@ void test_rand_point_generator(Polytope &P,
                          VT &Av,
                          Point &vec,
                                const NT &diameter,
-                         const Parameters &var)  // constants for volume
+                         Parameters &var)  // constants for volume
 {
     //typedef typename Polytope::VT VT;
     //typedef typename Point::FT NT;
@@ -99,7 +99,7 @@ void test_rand_point_generator(Polytope &P,
     //Av.setZero(P.num_of_hyperplanes());
 
     NT lambda;
-    nsteps += (rnum * walk_len);
+    var.nsteps += double(rnum * walk_len);
 
     test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec, true);
     for (unsigned int j = 0; j < walk_len-1; ++j){
@@ -127,10 +127,10 @@ void test_uniform_first_point(Polytope &P,
                          Point &vec,
                          NT &lambda,
                               const NT &diameter,
-                         const Parameters &var) {
+                         Parameters &var) {
 
     test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec, true);
-    nsteps += walk_len;
+    var.nsteps += double(walk_len);
     walk_len--;
 
     for (unsigned int j = 0; j < walk_len; j++){
@@ -150,8 +150,8 @@ void test_uniform_next_point(Polytope &P,
                         Point &vec,
                         NT &lambda,
                         const NT &diameter,
-                        const Parameters &var) {
-    nsteps += walk_len;
+                        Parameters &var) {
+    var.nsteps += double(walk_len);
     for (unsigned int j = 0; j < walk_len; j++){
         test_billiard_walk(P, p, diameter, lamdas, Av, lambda, var, vec);
     }
@@ -160,7 +160,7 @@ void test_uniform_next_point(Polytope &P,
 
 template <class ConvexBody, class Point, class Parameters, typename NT, typename VT>
 void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT &Av, NT &lambda_prev,
-                        const Parameters &var, Point &v, bool first = false) {
+                        Parameters &var, Point &v, bool first = false) {
 
     typedef typename Parameters::RNGType RNGType;
     unsigned int n = P.dimension();
@@ -181,7 +181,7 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     if (first) {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, inner_vi_ak);
         //var.nboracles += 1.0;
-        noracles++;
+        var.noracles = var.noracles + 1.0;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;
@@ -195,7 +195,7 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     } else {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev, inner_vi_ak, true);
         //var.nboracles += 1.0;
-        noracles++;
+        var.noracles = var.noracles + 1.0;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;
@@ -212,7 +212,7 @@ void test_billiard_walk(ConvexBody &P, Point &p, const NT &diameter, VT &Ar, VT 
     while (it<var.lw) {
         std::pair<NT, int> pbpair = P.line_positive_intersect(p, v, Ar, Av, lambda_prev, inner_vi_ak);
         //var.nboracles += 1.0;
-        noracles++;
+        var.noracles = var.noracles + 1.0;
         if (T <= pbpair.first) {
             p += (T * v);
             lambda_prev = T;

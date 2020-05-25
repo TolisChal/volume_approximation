@@ -21,9 +21,9 @@
 #include <math.h>
 #include <chrono>
 
-unsigned int noracles = 0;
-unsigned int nballs = 0;
-unsigned int nsteps = 0;
+//double noracles = 0.0;
+//unsigned int nballs = 0;
+//double nsteps = 0.0;
 
 #include "test_vol/test_cartesian_kernel.h"
 #include "test_vol/test_vars.h"
@@ -87,7 +87,7 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
     // initialization
     vars <NT, RNGType> var(rnum, n, walk_step, n_threads, 0.0, e, bref, 0.0, 0, InnerB.second, diam,
                            rng, urdist, urdist1,
-                           delta,log_length, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr, rdhr, billiard);
+                           delta,0.0,0.0,0,log_length, verbose, rand_only, rounding, NNN, birk, ball_walk, cdhr, rdhr, billiard);
     NT vol;
 
     //std::cout<<"volume = "<<vol<<std::endl;
@@ -105,11 +105,11 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
 
     Rcpp::NumericVector res(5);
     res[0] = vol*round_val;
-    res[1] = nballs;
-    res[2] = noracles;
-    //std::cout<<"noracles = "<<noracles<<std::endl;
+    res[1] = var.nballs;
+    res[2] = var.noracles;
+    //std::cout<<"steps = "<<var.nsteps<<std::endl;
     res[3] = 0;
-    res[4] = nsteps;
+    res[4] = var.nsteps;
 
     return res;
 }

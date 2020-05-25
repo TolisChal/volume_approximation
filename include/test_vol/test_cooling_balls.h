@@ -7,7 +7,7 @@
 #define TEST_COOLING_BALLS_H
 
 template <typename Polytope, typename Point, typename UParameters, typename AParameters, typename NT>
-NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
+NT test_cooling_balls(Polytope &P, UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
 
     typedef Ball <Point> ball;
     typedef BallIntersectPolytope <Polytope, ball> PolyBall;
@@ -71,7 +71,7 @@ NT test_cooling_balls(Polytope &P, const UParameters &var, const AParameters &va
     //return vol;
 
     int mm = BallSet.size() + 1;
-    nballs = mm - 1;
+    var.nballs = mm - 1;
     if (only_phases) {
         P.free_them_all();
         return vol;

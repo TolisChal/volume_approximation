@@ -93,6 +93,8 @@ public:
            NT frac,
            NT ratio,
            NT delta,
+           NT nsteps2,
+           NT noracles2,
            bool verbose,
            bool rand_only,
            bool round,
@@ -104,6 +106,7 @@ public:
     ) :
             n(n), walk_steps(walk_steps), N(N), W(W), n_threads(n_threads), error(error),
             che_rad(che_rad), rng(rng), C(C), frac(frac), ratio(ratio), delta(delta),
+            nsteps2(nsteps2), noracles2(noracles2),
             verbose(verbose), rand_only(rand_only), round(round),
             NN(NN),birk(birk),ball_walk(ball_walk),cdhr_walk(cdhr_walk), rdhr_walk(rdhr_walk){};
 
@@ -119,6 +122,8 @@ public:
     NT frac;
     NT ratio;
     NT delta;
+    NT nsteps2;
+    NT noracles2;
     bool verbose;
     bool rand_only;
     bool round;
