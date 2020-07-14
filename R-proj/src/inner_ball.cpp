@@ -15,6 +15,7 @@
 #include "vpolytope.h"
 #include "zpolytope.h"
 #include "vpolyintersectvpoly.h"
+#include "preprocess/max_inner_ball.hpp"
 
 //' Compute an inscribed ball of a convex polytope
 //'
@@ -36,7 +37,8 @@
 //' ball_vec = inner_ball(P)
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericVector inner_ball(Rcpp::Reference P) {
+Rcpp::NumericVector inner_ball(Rcpp::Reference P, 
+                                Rcpp::Nullable<std::string> method = R_NilValue) {
 
     typedef double NT;
     typedef Cartesian<NT>    Kernel;
@@ -51,6 +53,8 @@ Rcpp::NumericVector inner_ball(Rcpp::Reference P) {
     unsigned int n = P.field("dimension");
 
     std::pair <Point, NT> InnerBall;
+    std::string mthd = (!method.isNotNull()) ? std::string("ipm") : Rcpp::as<std::string>(method);
+
 
     int type = P.field("type");
 
@@ -59,7 +63,18 @@ Rcpp::NumericVector inner_ball(Rcpp::Reference P) {
             // Hpolytope
             Hpolytope HP;
             HP.init(n, Rcpp::as<MT>(P.field("A")), Rcpp::as<VT>(P.field("b")));
-            InnerBall = HP.ComputeInnerBall();
+            if(mthd.compare(std::string("lpsolve")) == 0) {
+                InnerBall = HP.ComputeInnerBall();
+                break;
+            } else if(mthd.compare(std::string("ipm")) == 0) {
+                NT tol = 0.00000001;
+                HP.normalize();
+                std::pair<VT, NT> res = compute_max_inner_ball(HP.get_mat(), HP.get_vec(), 150, tol);
+                InnerBall.second = res.second;
+                InnerBall.first = Point(res.first);
+            } else {         
+                throw Rcpp::exception("Unknown method!");
+            }
             break;
         }
         case 2: {

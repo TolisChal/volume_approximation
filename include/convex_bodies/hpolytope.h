@@ -502,11 +502,11 @@ public:
 
     void normalize() {
 
-        std::cout<<" hello "<<std::endl;
+        //std::cout<<" hello "<<std::endl;
         NT row_norm;
-        std::cout<<" m = "<<A.rows()<<std::endl;
+        //std::cout<<" m = "<<A.rows()<<std::endl;
         for (int i = 0; i < A.rows(); ++i) {
-            std::cout<<" i = "<<i<<std::endl;
+            //std::cout<<" i = "<<i<<std::endl;
             row_norm = A.row(i).norm();
             A.row(i) = A.row(i) / row_norm;
             b(i) = b(i) / row_norm;

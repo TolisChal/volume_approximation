@@ -20,8 +20,8 @@
 #' P = gen_cube(3, 'V')
 #' ball_vec = inner_ball(P)
 #' @export
-inner_ball <- function(P) {
-    .Call(`_volesti_inner_ball`, P)
+inner_ball <- function(P, method = NULL) {
+    .Call(`_volesti_inner_ball`, P, method)
 }
 
 #' An internal Rccp function as a polytope generator
@@ -64,6 +64,19 @@ rotating <- function(P) {
 #' @return A numerical matrix that describes the rounded polytope and contains the round value.
 rounding <- function(P, random_walk = NULL, walk_length = NULL, parameters = NULL, inner_point = NULL) {
     .Call(`_volesti_rounding`, P, random_walk, walk_length, parameters, inner_point)
+}
+
+#' Internal rcpp function for the rounding of a convex polytope
+#'
+#' @param P A convex polytope (H- or V-representation or zonotope).
+#' @param method Optional. The method to use for rounding, a) \code{'mve'} for the method based on mimimmum volume enclosing ellipsoid of a dataset, b) \code{'mve'} for the method based on maximum volume enclosed ellipsoid, (c) \code{'svd'} for the method based on svd decomposition.
+#' @param seed Optional. A fixed seed for the number generator.
+#'
+#' @keywords internal
+#'
+#' @return A numerical matrix that describes the rounded polytope, a numerical matrix of the inverse linear transofmation that is applied on the input polytope, the numerical vector the the input polytope is shifted and the determinant of the matrix of the linear transformation that is applied on the input polytope.
+rounding2 <- function(P, method = NULL, seed = NULL) {
+    .Call(`_volesti_rounding2`, P, method, seed)
 }
 
 #' The main function for volume approximation of a convex Polytope (H-polytope, V-polytope or a zonotope)
