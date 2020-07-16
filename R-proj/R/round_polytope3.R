@@ -1,0 +1,46 @@
+#' Apply rounding to a convex polytope (H-polytope, V-polytope or a zonotope)
+#' 
+#' Given a convex H or V polytope or a zonotope as input this function brings the polytope in rounded position based on minimum volume enclosing ellipsoid of a pointset.
+#' 
+#' @param P A convex polytope. It is an object from class (a) Hpolytope or (b) Vpolytope or (c) Zonotope.
+#' @param seed Optional. A fixed seed for the number generator.
+#' 
+#' @return A list with 4 elements: (a) a polytope of the same class as the input polytope class and (b) the element "T" which is the matrix of the inverse linear transformation that is applied on the input polytope, (c)  the element "shift" which is the opposite vector of that which has shifted the input polytope, (d) the element "round_value" which is the determinant of the square matrix of the linear transformation that is applied on the input polytope.
+#'
+#' @references \cite{I.Z.Emiris and V. Fisikopoulos,
+#' \dQuote{Practical polytope volume approximation,} \emph{ACM Trans. Math. Soft.,} 2018.},
+#' @references \cite{Michael J. Todd and E. Alper Yildirim,
+#' \dQuote{On Khachiyan’s Algorithm for the Computation of Minimum Volume Enclosing Ellipsoids,} \emph{Discrete Applied Mathematics,} 2007.}
+#'
+#' @examples
+#' # rotate a H-polytope (2d unit simplex)
+#' A = matrix(c(-1,0,0,-1,1,1), ncol=2, nrow=3, byrow=TRUE)
+#' b = c(0,0,1)
+#' P = Hpolytope$new(A, b)
+#' listHpoly = round_polytope2(P)
+#' 
+#' # rotate a V-polytope (3d unit cube) using Random Directions HnR with step equal to 50
+#' P = gen_cube(3, 'V')
+#' ListVpoly = round_polytope2(P)
+#' 
+#' # round a 2-dimensional zonotope defined by 6 generators using ball walk
+#' Z = gen_rand_zonotope(2,6)
+#' ListZono = round_polytope2(Z)
+#' @export
+round_polytope3 <- function(P, method = NULL, seed = NULL){
+  
+  ret_list = test_high_rounding(P, method, seed)
+  
+  #get the matrix that describes the polytope
+  Mat = ret_list$Mat
+  
+  # first column is the vector b
+  b = Mat[,1]
+  
+  # remove first column
+  A = Mat[,-c(1)]
+  
+  PP = list("P" = Hpolytope$new(A,b), "T" = ret_list$T, "shift" = ret_list$shift, "round_value" = ret_list$round_value)
+  
+  return(PP)
+}
