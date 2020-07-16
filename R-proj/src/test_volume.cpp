@@ -113,7 +113,7 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
     //std::cout<<"steps = "<<var.nsteps<<std::endl;
     res[3] = 0;
     res[4] = var.nsteps;
-    res[6] = vol_exp;
+    res[5] = vol_exp;
 
     return res;
 }
