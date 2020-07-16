@@ -14,7 +14,7 @@ NT log_gamma_function(NT x) {
 }
 
 template <typename Polytope, typename Point, typename UParameters, typename AParameters, typename NT>
-NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
+std::pair<NT,NT> test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var_ban, std::pair<Point,NT> &InnerBall, bool only_phases = false) {
 
     typedef Ball <Point> ball;
     typedef BallIntersectPolytope <Polytope, ball> PolyBall;
@@ -25,7 +25,7 @@ NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var
     int n = var.n, win_len = var_ban.win_len, N = var_ban.N, nu = var_ban.nu;
     bool verbose = var.verbose, round = var.round, window2 = var_ban.window2;
     NT lb = var_ban.lb, ub = var_ban.ub, prob = var_ban.p, rmax = var_ban.rmax, radius = InnerBall.second,
-            round_value = 1.0, e = var.error, alpha = var_ban.alpha, diam = var.diameter;
+            e = var.error, alpha = var_ban.alpha, diam = var.diameter;
 
     std::vector <ball> BallSet;
     std::vector <NT> ratios;
@@ -69,7 +69,7 @@ NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var
 
     if ( !test_get_sequence_of_polyballs<PolyBall, RNGType>(P, BallSet, ratios, N * nu, nu, lb, ub, radius, alpha, var,
                                                             rmax, vec, p, lamdas, Av) ){
-        return -1.0;
+        return std::pair<NT,NT> (-1.0, 1.0);
     }
     //diam = var.diameter;
 
@@ -82,7 +82,7 @@ NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var
     var.nballs = NT(mm - 1);
     if (only_phases) {
         P.free_them_all();
-        return vol;
+        return std::pair<NT,NT> (std::exp(vol), vol);
     }
     prob = std::pow(prob, 1.0 / NT(mm));
     NT er0 = e / (2.0 * std::sqrt(NT(mm))), er1 = (e * std::sqrt(4.0 * NT(mm) - 1)) / (2.0 * std::sqrt(NT(mm)));
@@ -128,7 +128,7 @@ NT test_cooling_balls_high(Polytope &P, UParameters &var, const AParameters &var
 
     P.free_them_all();
     //std::cout<<"vol = "<<vol <<std::endl;
-    return std::exp(vol) * round_value;
+    return std::pair<NT,NT> (std::exp(vol), vol);
 
 }
 

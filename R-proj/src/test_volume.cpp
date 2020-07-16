@@ -48,7 +48,7 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
             NNN = false,
             birk = false;
     unsigned int n_threads = 1;
-    NT round_val = 1.0, rmax = 0.0;
+    NT round_val = 1.0, rmax = 0.0, vol_exp=1.0;
 
     //unsigned int m;//=A.nrow()-1;
     unsigned int n = P.dimension();//=A.ncol()-1;
@@ -92,10 +92,13 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
 
     //std::cout<<"volume = "<<vol<<std::endl;
     vars_ban <NT> var_ban(lb, ub, p, rmax, alpha, win_len, NN, nu, win2);
-    if (n<=300) {
+    if (n<=200) {
         vol = test_cooling_balls(P, var, var_ban, InnerB);
     } else {
-        vol = test_cooling_balls_high(P, var, var_ban, InnerB);
+        //vol = test_cooling_balls_high(P, var, var_ban, InnerB);
+        std::pair<NT,NT> vol_res = test_cooling_balls_high(P, var, var_ban, InnerB);
+        vol = vol_res.first;
+        vol_exp = vol_res.second;
     }
 
     //std::cout<<"volume = "<<vol<<std::endl;
@@ -103,13 +106,14 @@ Rcpp::NumericVector test_generic_volume(Polytope& P, unsigned int walk_step, dou
         throw Rcpp::exception("Simulated annealing failed! Try to increase the walk length.");
     }
 
-    Rcpp::NumericVector res(5);
+    Rcpp::NumericVector res(6);
     res[0] = vol*round_val;
     res[1] = var.nballs;
     res[2] = var.noracles;
     //std::cout<<"steps = "<<var.nsteps<<std::endl;
     res[3] = 0;
     res[4] = var.nsteps;
+    res[6] = vol_exp;
 
     return res;
 }
