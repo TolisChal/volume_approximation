@@ -75,7 +75,6 @@ MT perform_raftery(MT const& samples, NT const& q, NT const& r, NT const& s)
 
     for (int i = 0; i < d; i++)
     {
-
         cutpt = empquant<VT>(sorted_samples.col(i), q);
         for (int j = 0; j < n; j++)
         {
