@@ -24,14 +24,21 @@ template
 std::tuple<MT, VT, NT> max_inscribed_ellipsoid_rounding(Polytope &P, 
                                                         std::pair<Point, NT> InnerBall)
 {
+    std::cout<<"rounding is on....."<<std::endl;
     std::pair<std::pair<MT, VT>, bool> iter_res;
     iter_res.second = false;
 
+    std::cout<<"is_in = "<<P.is_in(InnerBall.first)<<"\n"<<std::endl;
+
     VT x0 = InnerBall.first.getCoefficients();
+
+    std::cout<<"x0 = "<<x0.transpose()<<std::endl;
+    std::cout<<"\n radius = "<<InnerBall.second<<std::endl;
+
     MT E, L;
     unsigned int maxiter = 150, iter = 1, d = P.dimension();
 
-    NT R = 100.0, r = 1.0, tol = std::pow(10, -6.0), reg = std::pow(10, -3.0), round_val = 1.0;
+    NT R = 100.0, r = 1.0, tol = std::pow(10, -2.0), reg = std::pow(10, -3.0), round_val = 1.0;
 
     MT T = MT::Identity(d, d);
     VT shift = VT::Zero(d);
@@ -52,7 +59,8 @@ std::tuple<MT, VT, NT> max_inscribed_ellipsoid_rounding(Polytope &P,
         R = eigensolver.eigenvalues().maxCoeff();
 
         // check the roundness of the polytope
-        if(((R <= 6.0 * r && iter_res.second) || iter >= 20) && iter>3){
+        std::cout<<"R/r = "<<R/r<<", iter = "<<iter<<std::endl;
+        if((((R <= 6.0 * r && iter_res.second) || iter >= 20) && iter>3) || (R/r<2.0 && iter > 1)){
             break;
         }
 

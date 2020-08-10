@@ -57,7 +57,7 @@ void svd_on_sample(Polytope &P, Point &p, unsigned int const& num_rounding_steps
     p = p - q;
     P.shift(Means);
 
-    Eigen::JacobiSVD<MT> svd(RetMat, Eigen::ComputeThinV);
+    Eigen::BDCSVD<MT> svd(RetMat, Eigen::ComputeFullV);
     s = svd.singularValues() / svd.singularValues().minCoeff();
 
     if (s.maxCoeff() >= 2.0) {

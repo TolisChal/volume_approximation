@@ -105,6 +105,7 @@ std::pair<std::pair<MT, VT>, bool> max_inscribed_ellipsoid(MT A, VT b, VT const&
         res = std::max(r1, r2);
         res = std::max(res, r3);
         objval = std::log(E2.determinant()) / 2.0;
+        std::cout<<"prev_obj = "<<prev_obj<<", objval = "<<objval<<std::endl;
 
         Eigen::SelfAdjointEigenSolver <MT> eigensolver(E2); // E2 is positive definite matrix
         // computing eigenvalues of E2
@@ -118,6 +119,7 @@ std::pair<std::pair<MT, VT>, bool> max_inscribed_ellipsoid(MT A, VT b, VT const&
                 Rel / rel > 100.0 &&
                 reg > reg_lim) {
                 converged = false;
+                std::cout<<"not converged, i = "<<i<<std::endl;
                 //Stopped making progress
                 break;
             }
@@ -126,16 +128,24 @@ std::pair<std::pair<MT, VT>, bool> max_inscribed_ellipsoid(MT A, VT b, VT const&
         }
 
         // stopping criterion
+        std::cout<<"res = "<<res<<std::endl;
+        std::cout<<"bnrm = "<<bnrm<<std::endl;
+        std::cout<<" tol * (1.0 + bnrm) = "<< tol * (1.0 + bnrm)<<std::endl;
+        std::cout<<"rmu = "<<rmu<<", minmu = "<<minmu<<std::endl;
         if ((res < tol * (1.0 + bnrm) && rmu <= minmu) || 
-                (i > 100 && prev_obj != std::numeric_limits<NT>::lowest() &&
-                (prev_obj >= (1.0 - tol) * objval || objval <= (1.0 - tol) * prev_obj) ) ) {
+                (i > 5 && prev_obj != std::numeric_limits<NT>::lowest() &&
+                ((std::abs(objval - prev_obj) <= tol * objval && std::abs(objval - prev_obj) <= tol * prev_obj) ||
+                (prev_obj >= (1.0 - tol) * objval || objval <= (1.0 - tol) * prev_obj) ) ) ) {
             //converged
+            std::cout<<"converged, i = "<<i<<std::endl;
+            std::cout<<"prev_obj = "<<prev_obj<<", objval = "<<objval<<std::endl;
             x += x0;
             converged = true;
             break;
         }
 
         prev_obj = objval; // storing the objective value of the previous iteration
+        
         YQ.noalias() = Y * Q;
         G = YQ.cwiseProduct(YQ.transpose());
         y2h = 2.0 * yh;
@@ -207,12 +217,14 @@ std::pair<std::pair<MT, VT>, bool> max_inscribed_ellipsoid(MT A, VT b, VT const&
         astep = tau * std::min(std::min(1.0, ax), std::min(ay, az)); // compute the step
 
         // update iterates
+        std::cout<<"astep * dx.norm() = "<<(astep * dx).norm()<<std::endl;
         x += astep * dx;
         y += astep * dy;
         z += astep * dz;
 
         bmAx -= astep * Adx;
 
+        std::cout<<"i = "<<i<<std::endl;
         i++;
     }
 

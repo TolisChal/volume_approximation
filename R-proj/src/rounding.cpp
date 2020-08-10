@@ -61,6 +61,7 @@ std::tuple<MT, VT, NT> apply_rounding(Polytope &P, std::string const& method_rcp
 //' @return A numerical matrix that describes the rounded polytope, a numerical matrix of the inverse linear transofmation that is applied on the input polytope, the numerical vector the the input polytope is shifted and the determinant of the matrix of the linear transformation that is applied on the input polytope.
 // [[Rcpp::export]]
 Rcpp::List rounding (Rcpp::Reference P, Rcpp::Nullable<std::string> method = R_NilValue,
+                     Rcpp::Nullable<Rcpp::NumericVector> inner_point = R_NilValue,
                      Rcpp::Nullable<double> seed = R_NilValue){
 
     typedef double NT;
@@ -106,10 +107,17 @@ Rcpp::List rounding (Rcpp::Reference P, Rcpp::Nullable<std::string> method = R_N
                 throw Rcpp::exception("volesti supports rounding for full dimensional polytopes. Maybe call function get_full_dimensional_polytope()");
             }
             HP.normalize();
-            InnerBall = HP.ComputeInnerBall();
             if (method_rcpp.compare(std::string("max_ellipsoid")) == 0) {
+                if (inner_point.isNotNull()){
+                    std::cout<<"set x0"<<std::endl;
+                    InnerBall.first = Point(Rcpp::as<VT>(inner_point));
+                } else {
+                    InnerBall = HP.ComputeInnerBall();
+                }
+                std::cout<<"rounding....."<<std::endl;
                 round_res = max_inscribed_ellipsoid_rounding<MT, VT>(HP, InnerBall);
             } else {
+                InnerBall = HP.ComputeInnerBall();
                 round_res = apply_rounding<MT, VT, AcceleratedBilliardWalk>(HP, method_rcpp, walkL, InnerBall, rng);
             }
             Mat = extractMatPoly(HP);
