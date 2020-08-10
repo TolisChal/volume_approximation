@@ -64,12 +64,14 @@ Rcpp::List test_high_rounding (Rcpp::Reference P, Rcpp::Nullable<std::string> me
 
             if (mthd.compare(std::string("ipm")) == 0) {
                 NT tol = 0.00000001;
-                //std::pair<VT, NT> res = compute_max_inner_ball(HP.get_mat(), HP.get_vec(), 150, tol);
-                //InnerBall.second = res.second;
-                //InnerBall.first = Point(res.first);
+                std::pair<VT, NT> res = compute_max_inner_ball(HP.get_mat(), HP.get_vec(), 150, tol);
+                InnerBall.second = res.second;
+                InnerBall.first = Point(res.first);
             }else{
                 InnerBall = HP.ComputeInnerBall();
             }
+            std::cout<<"inner_point = "<<InnerBall.first.getCoefficients().transpose()<<std::endl;
+            std::cout<<"radius = "<<InnerBall.second<<std::endl;
             break;
         }
         default: {

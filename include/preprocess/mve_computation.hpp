@@ -79,6 +79,7 @@ std::pair<std::pair<MT, VT>, bool> mve_computation(MT A, VT b, VT const& x0,
         res = std::max(r1, r2);
         res = std::max(res, r3);
         objval = std::log(E2.determinant()) / 2.0;
+        std::cout<<"prev_obj = "<<prev_obj<<", objval = "<<objval<<std::endl;
 
         Eigen::SelfAdjointEigenSolver <MT> eigensolver(E2);
         rel = eigensolver.eigenvalues().minCoeff();
@@ -98,17 +99,20 @@ std::pair<std::pair<MT, VT>, bool> mve_computation(MT A, VT b, VT const& x0,
             last_r1 = r1;
         }
 
-        if ((res < tol * (1.0 + bnrm) && rmu <= minmu) || (i > 100 && prev_obj != std::numeric_limits<NT>::lowest() &&
-                                                           (prev_obj >= (1.0 - tol) * objval ||
-                                                            objval <= (1.0 - tol) * prev_obj))) {
-            //std::cout<<"iteration = "<<i<<std::endl;
-            //std::cout << "converged!" << std::endl;
+        std::cout<<"rmu = "<<rmu<<", minmu = "<<minmu<<std::endl;
+        if ((res < tol * (1.0 + bnrm) && rmu <= minmu) || 
+                (i > 4 && prev_obj != std::numeric_limits<NT>::lowest() &&
+                ((std::abs(objval - prev_obj) <= tol * objval && std::abs(objval - prev_obj) <= tol * prev_obj) ||
+                (prev_obj >= (1.0 - tol) * objval || objval <= (1.0 - tol) * prev_obj) ) ) ) {
+            std::cout<<"iteration = "<<i<<std::endl;
+            std::cout << "converged!" << std::endl;
             x += x0;
             converged = true;
             break;
         }
 
         prev_obj = objval;
+        std::cout<<"iteration = "<<i<<std::endl;
         YQ.noalias() = Y * Q;
         G = YQ.cwiseProduct(YQ.transpose());
         y2h = 2.0 * yh;

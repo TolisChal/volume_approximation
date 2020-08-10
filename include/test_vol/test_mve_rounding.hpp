@@ -38,7 +38,7 @@ std::pair< std::pair< std::pair<MT, VT>, std::pair<MT, VT> >, NT > test_mve_roun
     MT E, L;
     unsigned int maxiter = 150, iter = 1, d = P.dimension();
 
-    NT R = 100.0, r = 1.0, tol = std::pow(10, -6.0), reg = std::pow(10, -3.0), round_val = 0.0;
+    NT R = 100.0, r = 1.0, tol = std::pow(10, -2.0), reg = std::pow(10, -3.0), round_val = 0.0;
 
     MT T = MT::Identity(d,d);
     VT shift = VT::Zero(d);
@@ -68,7 +68,7 @@ std::pair< std::pair< std::pair<MT, VT>, std::pair<MT, VT> >, NT > test_mve_roun
         //    if (std::real(eigensolver.eigenvalues()[i]) > R) R = std::real(eigensolver.eigenvalues()[i]);
         //}
         std::cout<<"R/r = "<<R/r<<", iter_res.second = "<<iter_res.second<<", reg = "<<reg<<std::endl;
-        if(((R <= 6.0 * r && iter_res.second)  || iter >= 20) && iter>3){
+        if(((R <= 6.0 * r && iter_res.second)  || iter >= 20) && iter>2){
             std::cout<<"R/r = "<<R/r<<", break"<<std::endl;
             break;
         }
