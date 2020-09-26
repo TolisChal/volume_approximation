@@ -63,6 +63,9 @@ IF (OPENBLAS_LIB)
             add_executable (solve_sdp solve_sdp.cpp)
             TARGET_LINK_LIBRARIES(solve_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
 
+	    add_executable (test_sdp test_sdp.cpp)
+            TARGET_LINK_LIBRARIES(test_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
+
         ELSE()
             MESSAGE(STATUS "gfortran is required but it could not be found")
         ENDIF ()
