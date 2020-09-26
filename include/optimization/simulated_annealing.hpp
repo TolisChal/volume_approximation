@@ -14,6 +14,7 @@
 
 #include "optimization/sliding_window.hpp"
 #include "random_walks/boltzmann_hmc_walk.hpp"
+#include "random_walks/boltzmann_hmc_opt_walk.hpp"
 
 
 /// A magic number!
@@ -151,7 +152,7 @@ double solve_sdp(_Spectrahedron & spectrahedron, Point const & objectiveFunction
 
 
 
-template <typename _Spectrahedron, typename Point, typename _Settings>
+template <typename WalkType, typename _Spectrahedron, typename Point, typename _Settings>
 double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & objectiveFunction, _Settings const & settings,
          Point const & interiorPoint, Point& solution, double optimal_val, bool verbose = false) {
 
@@ -160,7 +161,8 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     typedef  typename _Spectrahedron::MATRIX_TYPE MT;
     typedef  typename _Spectrahedron::VECTOR_TYPE VT;
     typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
-    typedef BoltzmannHMCWalk::Walk<_Spectrahedron, RNGType > HMC;
+    //typedef BoltzmannHMCWalk::Walk<_Spectrahedron, RNGType > HMC;
+    typedef typename WalkType::template Walk<_Spectrahedron, RNGType > HMC;
 
     // the algorithm requires the objective function to be normalized
     // we will need to remember the norm
@@ -209,7 +211,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
 
             // if the sampled point is not inside the spectrahedron (error in boundary oracle),
             // get a new one
-            if (spectrahedron.isExterior(hmcPrecomputedValues.C)) {
+            if (spectrahedron.isExterior(solution.getCoefficients())) {
                 if (verbose) std::cout << "Sampled point outside the spectrahedron.\n";
                 randPoints.clear();
                 hmcPrecomputedValues.resetFlags();
@@ -218,6 +220,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
                 // update values;
                 solution = randPoints.back();
                 randPoints.clear();
+                hmcPrecomputedValues.resetFlags();
                 break;
             }
         }

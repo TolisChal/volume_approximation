@@ -21,6 +21,8 @@
 #include "convex_bodies/spectrahedra/spectrahedron.h"
 #include "SDPAFormatManager.h"
 #include "optimization/simulated_annealing.hpp"
+#include "random_walks/boltzmann_hmc_walk.hpp"
+#include "random_walks/boltzmann_hmc_opt_walk.hpp"
 
 
 typedef double NT;
@@ -29,15 +31,18 @@ typedef Eigen::Matrix <NT, Eigen::Dynamic, Eigen::Dynamic> MT;
 typedef Cartesian <NT> Kernel;
 typedef typename Kernel::Point Point;
 typedef Spectrahedron <NT, MT, VT> SPECTRAHEDRON;
+//typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
+//typedef BoltzmannHMCWalk::Walk<Spectrahedron, RNGType > HMC1;
+//typedef BoltzmannHMCOptWalk::Walk<Spectrahedron, RNGType > HMC2;
 
 
 int main(const int argc, const char** argv) {
 
     SPECTRAHEDRON spectrahedron;
     Point objFunction;
-    bool correct, verbose = false;
+    bool correct, verbose = false, best_on_traj = true;
     NT optimal_val;
-    NT rel_error = 0.001;
+    NT rel_error = 0.001, k=0.5;
 
     for(int i=1; i<argc; ++i){
 
@@ -63,6 +68,16 @@ int main(const int argc, const char** argv) {
             correct = true;
         }
 
+        if(!strcmp(argv[i],"-no_opts")){
+            best_on_traj = false;
+            correct = true;
+        }
+
+        if(!strcmp(argv[i],"-k")){
+            k = atof(argv[++i]);
+            correct = true;
+        }
+
         if(!strcmp(argv[i],"-verbose") || !strcmp(argv[i],"-v")){
             verbose = true;
             correct = true;
@@ -85,14 +100,15 @@ int main(const int argc, const char** argv) {
     
 
     // Declare settings
-    SimulatedAnnealingSettings<Point> settings(rel_error);
+    SimulatedAnnealingSettings<Point> settings(rel_error, 1, -1, k);
 
     // solve the program
     Point sol;
     NT min, average_runtime = 0.0;
     double tstart1, tstop1;
+    std::cout << "dimension: " << spectrahedron.getLMI().dimension() <<std::endl;
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 5; i++) {
 
         //initializations
         SPECTRAHEDRON spectrahedron_temp = spectrahedron;
@@ -100,17 +116,26 @@ int main(const int argc, const char** argv) {
         Point initialPoint_temp(spectrahedron.getLMI().dimension()), sol_temp(spectrahedron.getLMI().dimension());
 
         //computation
-        tstart1 = (double)clock()/(double)CLOCKS_PER_SEC;
-        min = solve_sdp_with_optimal(spectrahedron_temp, objFunction, settings_temp, initialPoint_temp, sol_temp, optimal_val, verbose);
-        tstop1 = (double)clock()/(double)CLOCKS_PER_SEC;
-        average_runtime += (tstop1 - tstart1);
+        if (best_on_traj) {
+            tstart1 = (double)clock()/(double)CLOCKS_PER_SEC;
+            min = solve_sdp_with_optimal<BoltzmannHMCOptWalk>(spectrahedron_temp, objFunction, settings_temp, 
+                                                              initialPoint_temp, sol_temp, optimal_val, verbose);
+            tstop1 = (double)clock()/(double)CLOCKS_PER_SEC;
+            average_runtime += (tstop1 - tstart1);
+        } else {
+            tstart1 = (double)clock()/(double)CLOCKS_PER_SEC;
+            min = solve_sdp_with_optimal<BoltzmannHMCWalk>(spectrahedron_temp, objFunction, settings_temp, 
+                                                           initialPoint_temp, sol_temp, optimal_val, verbose);
+            tstop1 = (double)clock()/(double)CLOCKS_PER_SEC;
+            average_runtime += (tstop1 - tstart1);
+        }
 
         // print solution
-        std::cout << min << "\n" << "point: ";
-        sol_temp.print();
+        std::cout << "time: " << (tstop1 - tstart1)<< ", min = "<< min << ", error = " << std::abs(optimal_val - min) / std::abs(optimal_val) <<std::endl;
+        //sol_temp.print();
     }
 
-    average_runtime = average_runtime / 10.0;
+    average_runtime = average_runtime / 5.0;
     std::cout << "average_runtime: " << average_runtime << "\n\n" << std::endl;
     std::ofstream myfile;
     myfile.open("average_runtimes.txt", std::ofstream::app);

@@ -190,6 +190,7 @@ public:
 
             // The vector v will be a random a direction
             VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
+            //VT v = GetSpericalGaussian<Point>::apply(n, rng).getCoefficients();
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound

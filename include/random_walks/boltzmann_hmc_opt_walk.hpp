@@ -174,30 +174,37 @@ public:
             const NT dl = settings.dl;
             unsigned int n = spectrahedron.dimension();
             int reflectionsNum = 0;
-            int reflectionsNumBound = settings.reflectionsBound * n;
+            int reflectionsNumBound = settings.reflectionsBound * std::sqrt(NT(n));
             VT previousPoint;
-            VT p0 = p;
+            //VT p0 = p;
 
             // choose a distance to walk
-            NT T = settings.diameter;
+            NT T = settings.diameter, norm_c = settings.c.norm(), 
+               lambda_with_min_val, best_val = settings.c.dot(p);
 
             // The trajectory will be of the form a*t^2 + vt + p
             // where a = -c / 2*temperature
             // and at each reflection, v and p will change
 
             // crate vector a
-            VT a = -settings.c / (2 * settings.temperature);
+            VT a = -settings.c / (2 * settings.temperature), p_best = p, p_temp(n);
 
             // The vector v will be a random a direction
-            VT v = GetSpericalGaussian<Point>::apply(n, rng).getCoefficients();
+            //VT v = GetSpericalGaussian<Point>::apply(n, rng).getCoefficients();
+            VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound
-            while (reflectionsNum++ < 10*reflectionsNumBound) {
+            //std::cout<<"norm-c = "<<norm_c<<std::endl;
+            while (reflectionsNum < reflectionsNumBound) {
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
                 NT lambda = spectrahedron.positiveIntersection(a, v, p, precomputedValues);
+                lambda_with_min_val = (settings.c.dot(v)) /((norm_c * norm_c) / settings.temperature);
+                //std::cout<<"lambda = "<<lambda<<", lambda_with_min_val = "<<lambda_with_min_val<<std::endl;
+                p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                //std::cout<<"lambda_max_obj = "<<settings.c.dot(p_temp)<<", obj_current = "<<settings.c.dot(p)<<", best = "<<best_val<<std::endl;
 
                 // We just solved a quadratic polynomial eigenvalue system At^2 + Bt + C,
                 // where A = lmi(a) - A0, B = lmi(v) - A0 and C = lmi(p)
@@ -215,12 +222,70 @@ public:
                 // if we can walk the remaining distance without reaching he boundary
                 if (T <= lambda) {
                     // set the new point p:= (T^2)*a + T*V + p
-                    p += (T * T) * a + T * v;
+                    //p += (T * T) * a + T * v;
+                    if (lambda_with_min_val < 0.0) {
+                        lambda_with_min_val = lambda * 0.95;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                    } else if (lambda < lambda_with_min_val){
+                        lambda_with_min_val = lambda * 0.05;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                    } else if (lambda > lambda_with_min_val) {
+                        lambda_with_min_val = lambda * 0.05;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                        lambda_with_min_val = lambda * 0.95;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                    }
+                    //std::cout<<"STOP REFLECVTIONS!!\n\n";
 
                     // update matrix C
-                    precomputedValues.C += (T * T) * precomputedValues.A + T * precomputedValues.B;
-                    return;
+                    //precomputedValues.C += (T * T) * precomputedValues.A + T * precomputedValues.B;
+                    break;
                 }
+
+                if (lambda_with_min_val < 0.0) {
+                        lambda_with_min_val = lambda * 0.95;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                } else if (lambda < lambda_with_min_val){
+                        lambda_with_min_val = lambda * 0.05;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                } else if (lambda > lambda_with_min_val) {
+                        lambda_with_min_val = lambda * 0.05;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                        lambda_with_min_val = lambda * 0.95;
+                        p_temp = (lambda_with_min_val * lambda_with_min_val) * a + lambda_with_min_val * v + p;
+                        if (settings.c.dot(p_temp) < best_val) {
+                            best_val = settings.c.dot(p_temp);
+                            p_best = p_temp;
+                        }
+                    }
 
                 // we hit the boundary and still have to walk
                 // don't go all the way to the boundary, for numerical stability
@@ -244,11 +309,15 @@ public:
                 VT reflectedTrajectory;
                 spectrahedron.computeReflection(p, v, reflectedTrajectory, precomputedValues);
                 v = reflectedTrajectory;
+                reflectionsNum++;
             }
 
+            //std::cout<<"set p!"<<std::endl;
+            p = p_best;
+            //std::cout<<"is in = "<< spectrahedron.is_in(p) <<std::endl;
             // if the #reflections exceeded the limit, don't move
-            if (reflectionsNum == reflectionsNumBound)
-                p = p0;
+            //if (reflectionsNum == reflectionsNumBound/2) std::cout<<"limit reached!"<<std::endl;
+                //p = p0;
         }
 
         /// Sets the temperature in the distribution
