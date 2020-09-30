@@ -22,7 +22,7 @@
 #include "sampling/sampling.hpp"
 
 
-enum random_walks {ball_walk, rdhr, cdhr, billiard, accelarated_billiard, 
+enum random_walks {ball_walk, rdhr, cdhr, billiard, accelarated_billiard, adaptive_billiard,
                    dikin_walk, vaidya_walk, john_walk, brdhr, bcdhr};
 
 template <typename Polytope, typename RNGType, typename PointList, typename NT, typename Point>
@@ -102,6 +102,15 @@ void sample_from_polytope(Polytope &P, int type, RNGType &rng, PointList &randPo
             uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
         } else {
             uniform_sampling<AcceleratedBilliardWalk>(randPoints, P, rng, walkL, numpoints,
+                     StartingPoint, nburns);
+        }
+        break;
+    case adaptive_billiard:
+        if(set_L) {
+            AdaptiveBilliardWalk WalkType(L);
+            uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
+        } else {
+            uniform_sampling<AdaptiveBilliardWalk>(randPoints, P, rng, walkL, numpoints,
                      StartingPoint, nburns);
         }
         break;
@@ -309,6 +318,14 @@ Rcpp::NumericMatrix sample_points(Rcpp::Nullable<Rcpp::Reference> P,
     } else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("aBiW")) == 0) {
         if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
         walk = accelarated_billiard;
+        if (Rcpp::as<Rcpp::List>(random_walk).containsElementNamed("L")) {
+            L = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(random_walk)["L"]);
+            set_L = true;
+            if (L <= 0.0) throw Rcpp::exception("L must be a postitive number!");
+        }
+    }  else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("adaptBiW")) == 0) {
+        if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
+        walk = adaptive_billiard;
         if (Rcpp::as<Rcpp::List>(random_walk).containsElementNamed("L")) {
             L = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(random_walk)["L"]);
             set_L = true;
