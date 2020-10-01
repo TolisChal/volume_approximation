@@ -207,6 +207,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
         // get a sample under the Boltzmann distribution
         // using the HMC random walk
         while (1) {
+            //std::cout << "hello sampling" << "\n";
             hmcRandomWalk.apply(spectrahedron, solution, settings.walkLength, randPoints, hmcPrecomputedValues);
 
             // if the sampled point is not inside the spectrahedron (error in boundary oracle),
