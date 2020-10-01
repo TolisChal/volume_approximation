@@ -23,6 +23,7 @@
 #include "optimization/simulated_annealing.hpp"
 #include "random_walks/boltzmann_hmc_walk.hpp"
 #include "random_walks/boltzmann_hmc_opt_walk.hpp"
+#include "random_walks/boltzmann_hmc_full_opt_walk.hpp"
 
 
 typedef double NT;
@@ -118,7 +119,7 @@ int main(const int argc, const char** argv) {
         //computation
         if (best_on_traj) {
             tstart1 = (double)clock()/(double)CLOCKS_PER_SEC;
-            min = solve_sdp_with_optimal<BoltzmannHMCOptWalk>(spectrahedron_temp, objFunction, settings_temp, 
+            min = solve_sdp_with_optimal<BoltzmannHMCFullOptWalk>(spectrahedron_temp, objFunction, settings_temp, 
                                                               initialPoint_temp, sol_temp, optimal_val, verbose);
             tstop1 = (double)clock()/(double)CLOCKS_PER_SEC;
             average_runtime += (tstop1 - tstart1);

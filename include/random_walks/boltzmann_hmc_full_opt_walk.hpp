@@ -7,15 +7,155 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_BOLTZMANN_HMC_OPT_WALK_HPP
-#define VOLESTI_BOLTZMANN_HMC_OPT_WALK_HPP
+#ifndef VOLESTI_BOLTZMANN_HMC_FULL_OPT_WALK_HPP
+#define VOLESTI_BOLTZMANN_HMC_FULL_OPT_WALK_HPP
 
 #include "spectrahedron.h"
 #include "generators/boost_random_number_generator.hpp"
 #include "../sampling/sphere.hpp"
+#include "root_finders/low_degree_polynomials.hpp"
+
+
+template<typename VT, typename NT>
+bool stopping_criterion_is_true(VT const& c, VT const& pi, VT const& vi, NT const& lambda,
+                                VT const& p0, VT const& v0, NT const& T,  NT const& cv0, 
+                                NT const& p0v0, NT const& cp0, std::vector<double> x) 
+{ 
+    NT a = cv0 / (2*T), b = -vi.dot(v0), c1 = p0v0 - pi.dot(v0);
+    NT D = b*b - 4*a*c1, r1, r2;
+    int nroots_sq = 0;
+    std::vector<NT> roots;
+
+    if (D < 0.0 && a > 0.0)  return false;
+    if (D > 0.0) {
+        r1 = (-b - std::sqrt(D) ) / (2 * a);
+        r2 = (-b + std::sqrt(D) ) / (2 * a);
+        nroots_sq = 2;
+    }
+
+    NT aa = 1.0/(2.0 * T * T), vi_norm_sq = vi.norm(), y;
+    vi_norm_sq = vi_norm_sq * vi_norm_sq;
+    NT bb = ( (-1.5 * c.dot(vi)) / (2*T) ) / aa, cc = ( (cp0 - c.dot(pi)) / T + vi_norm_sq ) / aa,
+       dd = (pi.dot(vi) - p0.dot(vi)) / aa;
+    
+    int nroots = SolveP3(x, bb, cc, dd), total_roots = 0;
+
+    if (nroots == 3) {
+        
+        if (nroots_sq == 2) {
+            x.push_back(r1);
+            x.push_back(r2);
+            std::sort (x.begin(), x.end());
+            total_roots = 5;
+        } else {
+            std::sort (x.begin(), x.end());
+            total_roots = 3;
+            for (int i = 0; i < 3; i++){
+                if (x[i] > 0.0 && x[i] < lambda){
+                    return true;
+                }
+            }
+            y = lambda / 2.0;
+            if ( (y*y*y + bb * y * y + cc * y + dd) < 0.0 ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    } else if (nroots == 1) {
+        if (nroots_sq == 2) {
+            x[1] = r1;
+            x[2] = r2;
+            std::sort (x.begin(), x.end());
+            total_roots = 3;
+        } else {
+            if (x[0] < 0.0 || x[0] > lambda) {
+                y = lambda / 2.0;
+                if ( (y*y*y + bb * y * y + cc * y + dd) < 0.0 ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        }
+    } else {
+        if (nroots_sq == 2) {
+            x[2] = r1;
+            x.push_back(r2);
+            std::sort (x.begin(), x.end());
+            total_roots = 4;
+        } else {
+            NT g1 = x[0], g2 = x[1];
+            if (g2 < g1) {
+                NT temp_g = g1;
+                g1 = g2;
+                g2 = g1;
+            }
+            if (g2 < 0.0 || g1 > lambda) {
+                y = lambda / 2.0;
+                if ( (y*y*y + bb * y * y + cc * y + dd) < 0.0 ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            total_roots = 2;
+        }
+        //std::cout<<"two roots"<<std::endl;
+        return false;
+    }
+
+    if (x[0] > lambda || x[nroots - 1] < 0.0) {
+        y = lambda / 2.0;
+        if ( ( (y*y*y + bb * y * y + cc * y + dd) * (a * y*y + b * y + c1 ) ) < 0.0 ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    
+    int counter = 0;
+    bool first_positive = false;
+    while (counter < total_roots) {
+        
+        if (x[counter] > 0.0 && !first_positive) {
+            first_positive = true;
+            y = x[counter] / 2.0;
+            if ( ( (y*y*y + bb * y * y + cc * y + dd) * (a * y*y + b * y + c1 ) ) < 0.0 ) {
+                return true;
+            }
+        }
+
+        if (counter != total_roots -1) {
+            if (x[counter + 1] > lambda) {
+                y = (x[counter] + lambda) / 2.0;
+                if ( ( (y*y*y + bb * y * y + cc * y + dd) * (a * y*y + b * y + c1 ) ) < 0.0 ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            y = (x[counter] + x[counter + 1]) / 2.0;
+            if ( ( (y*y*y + bb * y * y + cc * y + dd) * (a * y*y + b * y + c1 ) ) < 0.0 ) {
+                return true;
+            }
+        } else {
+            y = (x[counter] + lambda) / 2.0;
+            if ( ( (y*y*y + bb * y * y + cc * y + dd) * (a * y*y + b * y + c1 ) ) < 0.0 ) {
+                return true;
+            }
+        }
+        counter++;
+    }
+
+    return false;
+}
 
 /// The Hamiltonian Monte Carlo random walk, to sample from the Boltzmann distribution, i.e. e^(-c*x/T).
-struct BoltzmannHMCOptWalk {
+struct BoltzmannHMCFullOptWalk {
 public:
 
     struct parameters {};
@@ -84,12 +224,15 @@ public:
 
         /// The parameters of the random walk
         Settings settings;
+        std::vector<double> x;
 
         Walk() {}
 
         /// Constructor
         /// \param[in] settings The settings of the random walk
-        Walk(Settings &settings) : settings(settings) {}
+        Walk(Settings &settings) : settings(settings) {
+            x = std::vector<double>(3);
+        }
 
         /// Change the settings
         /// \param[in] settings The settings of the random walk
@@ -174,12 +317,12 @@ public:
             const NT dl = settings.dl;
             unsigned int n = spectrahedron.dimension();
             int reflectionsNum = 0;
-            int reflectionsNumBound = settings.reflectionsBound * std::sqrt(NT(n));
+            int reflectionsNumBound = settings.reflectionsBound * n*2;
             VT previousPoint;
             VT p0 = p;
 
             // choose a distance to walk
-            NT T = settings.diameter, norm_c = settings.c.norm(), 
+            NT T = 0.0, norm_c = 1.0, 
                lambda_with_min_val, best_val = settings.c.dot(p);
 
             // The trajectory will be of the form a*t^2 + vt + p
@@ -190,8 +333,10 @@ public:
             VT a = -settings.c / (2 * settings.temperature), p_best = p, p_temp(n);
 
             // The vector v will be a random a direction
-            //VT v = GetSpericalGaussian<Point>::apply(n, rng).getCoefficients();
-            VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
+            VT v = GetSpericalGaussian<Point>::apply(n, rng).getCoefficients();
+            //VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
+            VT v0 = v;
+            NT cv0 = settings.c.dot(v0), cp0 = settings.c.dot(p0), p0v0 = p0.dot(v0);
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound
@@ -220,7 +365,8 @@ public:
                 precomputedValues.computed_XY = true;
 
                 // if we can walk the remaining distance without reaching he boundary
-                if (T <= lambda) {
+                if (stopping_criterion_is_true(settings.c, p, v, lambda, p0, v0, T, cv0, 
+                                               p0v0, cp0, x)) {
                     // set the new point p:= (T^2)*a + T*V + p
                     //p += (T * T) * a + T * v;
                     if (lambda_with_min_val < 0.0) {
@@ -296,7 +442,7 @@ public:
                 p += (lambda * lambda) * a + lambda * v;
 
                 // update remaining distance we must walk
-                T -= lambda;
+                //T -= lambda;
 
                 // update matrix C
                 precomputedValues.C += (lambda * lambda) * precomputedValues.A + lambda * precomputedValues.B;
@@ -330,4 +476,5 @@ public:
 };
 
 #endif //VOLESTI_BOLTZMANN_HMC_WALK_HPP
+
 
