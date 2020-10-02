@@ -7,10 +7,15 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_DENSEPRODUCTMATRIX_H
-#define VOLESTI_DENSEPRODUCTMATRIX_H
+#ifndef VOLESTI_SPARSEPRODUCTMATRIX_H
+#define VOLESTI_SPARSEPRODUCTMATRIX_H
 
-#define PARTIAL_LU_DECOMPOSITION
+#ifndef NDEBUG
+#define NDEBUG
+#endif /* NDEBUG */
+
+#define SPARSE_LU_DECOMPOSITION
+//#define SPARSE_CHOLESKY_DECOMPOSITION
 
 /// A wrapper class for dense Eigen matrices in Spectra and ARPACK++
 /// This class will be the wrapper to use the Spectra nonsymemmetric standard eigenvalue Cx = lx solver to
@@ -19,12 +24,16 @@
 ///
 /// \tparam NT Numeric Type
 template<typename NT>
-class DenseProductMatrix {
+class SparseProductMatrix {
 public:
     /// Eigen matrix type
-    typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
-    /// Eigen vector type
+    typedef Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+    typedef Eigen::Map<const VT> MapConstVT;
+    typedef Eigen::Map<VT> MapVT;
+    //typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    /// Eigen vector type
+    
 
     /// The number of rows
     int _rows;
@@ -39,10 +48,10 @@ public:
     /// The decomposition we will use
     /// If PARTIAL_LU_DECOMPOSITION is defined, use the Eigen partial LU decomposition,
     /// otherwise full. The partial is faster but assumes that the matrix has full rank.
-#if defined(PARTIAL_LU_DECOMPOSITION)
-    typedef Eigen::PartialPivLU<MT> Decomposition;
+#if defined(SPARSE_LU_DECOMPOSITION)
+    typedef Eigen::SparseLU<MT, Eigen::COLAMDOrdering<int> > Decomposition;
 #else
-    typedef Eigen::FullPivLU<MT> Decomposition;
+    //typedef Eigen::FullPivLU<MT> Decomposition;
 #endif
 
     /// The LU decomposition of B
@@ -52,10 +61,12 @@ public:
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    DenseProductMatrix(MT const *A, MT const *B) : A(A), B(B) {
-        Blu = Decomposition(*B);
-        _rows = A->rows();
-        _cols = B->cols();
+    SparseProductMatrix(MT const *A, MT const *B) : A(A), B(B) {
+        //Blu = Decomposition(*B);
+        Blu.analyzePattern(*B);
+        Blu.factorize(*B); 
+        _cols = A->cols();
+        _rows = B->rows();
     }
 
     ///Required by Spectra
@@ -79,11 +90,13 @@ public:
 
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
-        Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
+        MapConstVT x(x_in, _cols);
+        //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
         VT const v.noalias() = *A * x;
 
-        Eigen::Map<VT> y(y_out, _rows);
-        y = Blu.solve(v);
+        //Eigen::Map<VT> y(y_out, _rows);
+        MapVT y(y_out, _rows);
+        y.noalias() = Blu.solve(v);
     }
 
     /// Required by arpack.
@@ -95,11 +108,14 @@ public:
 
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
-        Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
+        //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
+        MapConstVT x(x_in, _cols);
         VT const v.noalias() = *A * x;
 
-        Eigen::Map<VT> y(y_out, _rows);
-        y = Blu.solve(v);
+        //Eigen::Map<VT> y(y_out, _rows);
+        MapVT      y(y_out, _rows);
+        y.noalias() = Blu.solve(v);
     }
 };
 #endif //VOLESTI_DENSEPRODUCTMATRIX_H
+

@@ -13,13 +13,16 @@
 /// A wrap class to use Eigen dense matrices when solving Eigenvalue problems with ARPACK++
 /// \tparam NT Numeric Type
 template<class NT>
-class EigenDenseMatrix {
+class EigenSparseMatrix {
 public:
 
     /// Eigen matrix type
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
+    typedef Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
     /// Eigen vector type
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+    /// Eigen map function
+    typedef Eigen::Map<const VT> MapConstVT;
+    typedef Eigen::Map<VT> MapVT;
 
     /// The matrix
     MT const * M;
@@ -44,29 +47,29 @@ public:
     /// Required by ARPACK++ : Multiplies the matrix with vector v
     /// \param[in] v The input vector, for example double*
     /// \param[out] w The result of M*v
-    void MultMv(NT* v, NT* w) {
+    void MultMv(NT const *v, NT* w) {
         // Declaring the vectors like this, we don't copy the values of v and after to w
-        Eigen::Map<VT> _v(v, m);
-        Eigen::Map<VT> _w(w, m);
+        MapConstVT _v(v, n);
+        MapVT _w(w, m);
 
-        _w.noalias() = *M * _v;
+        _w = *M * _v;
     }
 
     /// Required by ARPACK++ : Multiplies the matrix with vector v
     /// \param[in] v The input vector, for example double*
     /// \param[out] w The result of M*v
-    void perform_op(NT* v, NT* w) {
+    void perform_op(NT const *v, NT* w) {
         // Declaring the vectors like this, we don't copy the values of v and after to w
-        Eigen::Map<VT> _v(v, m);
-        Eigen::Map<VT> _w(w, m);
+        MapConstVT _v(v, n);
+        MapVT _w(w, m);
 
-        _w.noalias() = *M * _v;
+        _w = *M * _v;
     }
 
 
     /// Constructs an object
     /// \param[in] M An Eigen Matrix
-    EigenDenseMatrix(MT const * M) {
+    EigenSparseMatrix(MT const * M) {
         this->M = M;
         n = M->cols();
         m = M->rows();
@@ -74,3 +77,4 @@ public:
 
 };
 #endif //VOLESTI_EIGENDENSEMATRIX_H
+
