@@ -23,6 +23,7 @@
 #include "SparseProductMatrix.h"
 #include "EigenSparseMatrix.h"
 
+#include "../../external/Spectra/include/Spectra/MatOp/SparseCholesky.h"
 #include "../../external/Spectra/include/Spectra/SymGEigsSolver.h"
 #include "../../external/Spectra/include/Spectra/GenEigsSolver.h"
 #include "../../external/arpack++/include/arsnsym.h"
@@ -40,10 +41,10 @@ class SparseEigenvaluesProblems {
 /// A specialization of the template class EigenvaluesProblems for dense Eigen matrices and vectors.
 /// \tparam NT
 template<typename NT>
-class SparseEigenvaluesProblems<NT, Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
+class SparseEigenvaluesProblems<NT, Eigen::SparseMatrix<NT>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
 public:
     /// The type for Eigen Matrix
-    typedef Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef Eigen::SparseMatrix<NT> MT;
     /// The type for Eigen vector
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
     /// The type of a complex Eigen Vector for handling eigenvectors

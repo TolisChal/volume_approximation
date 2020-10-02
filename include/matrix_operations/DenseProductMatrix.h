@@ -79,11 +79,12 @@ public:
 
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
-        Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v.noalias() = *A * x;
+        //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
+        Eigen::Map<const VT> x(x_in, _cols);
+        VT const v = *A * x;
 
         Eigen::Map<VT> y(y_out, _rows);
-        y = Blu.solve(v);
+        y.noalias() = Blu.solve(v);
     }
 
     /// Required by arpack.
@@ -95,11 +96,12 @@ public:
 
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
-        Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v.noalias() = *A * x;
+        Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
+        //Eigen::Map<const VT> x(x_in, _cols);
+        VT const v = *A * x;
 
         Eigen::Map<VT> y(y_out, _rows);
-        y = Blu.solve(v);
+        y.noalias() = Blu.solve(v);
     }
 };
 #endif //VOLESTI_DENSEPRODUCTMATRIX_H

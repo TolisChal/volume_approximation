@@ -254,6 +254,19 @@ public:
         objectiveFunction = Point(coeffs);
     }
 
+    void loadSDPAFormatFile(std::ifstream &is, std::vector< Eigen::SparseMatrix<NT> > &matrices, VT &objectiveFunction) {
+    }
+
+    template <typename Point>
+    void loadSDPAFormatFile(std::ifstream &is, Spectrahedron<NT, Eigen::SparseMatrix<NT>, VT> &spectrahedron, Point &objectiveFunction) {
+        std::vector<Eigen::SparseMatrix<NT>> matrices;
+        VT coeffs;
+        loadSDPAFormatFile(is, matrices, coeffs);
+        LMI<NT, Eigen::SparseMatrix<NT>, VT> lmi(matrices);
+        spectrahedron = Spectrahedron<NT, Eigen::SparseMatrix<NT>, VT>(lmi);
+        objectiveFunction = Point(coeffs);
+    }
+
 
     /// Write a spectrahedron and a vector (objective function) to a SDPA format output file
     /// \tparam Point

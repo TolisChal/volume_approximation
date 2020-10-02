@@ -11,6 +11,7 @@
 // It will read a semidefinite program from data/sdp_n2m3.txt, print it and then write it to a new file
 
 #define VOLESTI_DEBUG
+#define DENSE_PROBLEM
 
 #include <fstream>
 #include <iostream>

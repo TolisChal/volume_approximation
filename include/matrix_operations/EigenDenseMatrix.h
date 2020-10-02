@@ -44,9 +44,9 @@ public:
     /// Required by ARPACK++ : Multiplies the matrix with vector v
     /// \param[in] v The input vector, for example double*
     /// \param[out] w The result of M*v
-    void MultMv(NT* v, NT* w) {
+    void MultMv(NT const *v, NT* w) {
         // Declaring the vectors like this, we don't copy the values of v and after to w
-        Eigen::Map<VT> _v(v, m);
+        Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
         _w.noalias() = *M * _v;
@@ -55,9 +55,9 @@ public:
     /// Required by ARPACK++ : Multiplies the matrix with vector v
     /// \param[in] v The input vector, for example double*
     /// \param[out] w The result of M*v
-    void perform_op(NT* v, NT* w) {
+    void perform_op(NT const *v, NT* w) {
         // Declaring the vectors like this, we don't copy the values of v and after to w
-        Eigen::Map<VT> _v(v, m);
+        Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
         _w.noalias() = *M * _v;

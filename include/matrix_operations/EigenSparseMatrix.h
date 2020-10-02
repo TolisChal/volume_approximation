@@ -7,8 +7,8 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_EIGENDENSEMATRIX_H
-#define VOLESTI_EIGENDENSEMATRIX_H
+#ifndef VOLESTI_EIGENSPARSEMATRIX_H
+#define VOLESTI_EIGENSPARSEMATRIX_H
 
 /// A wrap class to use Eigen dense matrices when solving Eigenvalue problems with ARPACK++
 /// \tparam NT Numeric Type
@@ -17,7 +17,7 @@ class EigenSparseMatrix {
 public:
 
     /// Eigen matrix type
-    typedef Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef Eigen::SparseMatrix<NT> MT;
     /// Eigen vector type
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
     /// Eigen map function

@@ -113,7 +113,12 @@ public:
         createMatricesForPositiveIntersection(a, b, c, precomputedValues);
 
         // get the minimum positive eigenvalue of At^2 + Bt + C
-        EigenvaluesProblems<NT, MT, VT> quadraticEigenvaluesProblem;
+        
+        #if defined(SPARSE_PROBLEM)
+            SparseEigenvaluesProblems<NT, MT, VT> quadraticEigenvaluesProblem;
+        #elif defined(DENSE_PROBLEM)
+            EigenvaluesProblems<NT, MT, VT> quadraticEigenvaluesProblem;
+        #endif
         NT distance = quadraticEigenvaluesProblem.minPosQuadraticEigenvalue(precomputedValues.A, precomputedValues.B,
                                                                             precomputedValues.C, precomputedValues.X,
                                                                             precomputedValues.Y,
@@ -138,7 +143,11 @@ public:
         if (!precomputedValues.computed_A)
             lmi.evaluate(a, precomputedValues.A);
 
-        EigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
+        #if defined(SPARSE_PROBLEM)
+            SparseEigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
+        #elif defined(DENSE_PROBLEM)
+            EigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
+        #endif
         return eigenvaluesProblems.symGeneralizedProblem(precomputedValues.A, *(lmi.getMatrix(coordinate)));
     }
 

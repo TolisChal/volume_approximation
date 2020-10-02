@@ -12,6 +12,7 @@
 
 //#define VOLESTI_DEBUG
 
+#define DENSE_PROBLEM
 
 #include <iostream>
 #include <fstream>

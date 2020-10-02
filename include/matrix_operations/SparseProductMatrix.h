@@ -27,7 +27,7 @@ template<typename NT>
 class SparseProductMatrix {
 public:
     /// Eigen matrix type
-    typedef Eigen::SparseMatrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef Eigen::SparseMatrix<NT> MT;
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
     typedef Eigen::Map<const VT> MapConstVT;
     typedef Eigen::Map<VT> MapVT;
@@ -92,7 +92,7 @@ public:
         // and next of y to y_out
         MapConstVT x(x_in, _cols);
         //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v.noalias() = *A * x;
+        VT const v = *A * x;
 
         //Eigen::Map<VT> y(y_out, _rows);
         MapVT y(y_out, _rows);
@@ -109,11 +109,11 @@ public:
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
         //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        MapConstVT x(x_in, _cols);
-        VT const v.noalias() = *A * x;
+        MapConstVT x(const_cast<double*>(x_in), _cols);
+        VT const v = *A * x;
 
         //Eigen::Map<VT> y(y_out, _rows);
-        MapVT      y(y_out, _rows);
+        MapVT y(y_out, _rows);
         y.noalias() = Blu.solve(v);
     }
 };
