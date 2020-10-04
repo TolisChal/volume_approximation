@@ -121,7 +121,7 @@ public:
     int _m, _d;
 
     typedef Eigen::Triplet<NT> T;
-    std::vector<T> tripletList;
+    std::vector<T> tripletList;    
 
     int get_position_in_column(int const& i, int const& j, int const& m)
     {
@@ -160,7 +160,8 @@ public:
 
         // copy elements
         int atMatrix = 0;
-        
+        //typedef Eigen::Triplet<NT> T;
+        //std::vector<T> tripletList;
 
         for (; iter != matrices.end(); iter++, atMatrix++) 
         {
@@ -188,7 +189,7 @@ public:
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res)  const {
+    void evaluateWithoutA0(const VT& x, MT& res) {
         //#define EVALUATE_WITHOUT_A0_NAIVE
         #if defined(EVALUATE_WITHOUT_A0_NAIVE)
             res.resize(m,m);
@@ -204,19 +205,24 @@ public:
             std::pair<int, int> row_col;
 
             MT a = matrices_as_vectors[0] * x(0);
-            typename std::vector<MT>::iterator iter = matrices_as_vectors.begin();
+            typename std::vector<MT>::iterator iter;
+            iter = matrices_as_vectors.begin();
             iter++;
             res.resize(_m, _m);
             for (int i = 1; i < _d; i++, iter++) {
                 a += (*iter) * x(i);
             }
 
+            
+            //int row;
+
             tripletList.clear();
             for (int k = 0; k < a.outerSize(); ++k)
             {
                 for (typename MT::InnerIterator it(a, k); it; ++it)
                 {
-                    row_col = get_position_in_matrix (it.row(), _m);
+                    //row = int(it.row());
+                    row_col = get_position_in_matrix(it.row(), _m);
                     tripletList.push_back(T(row_col.first, row_col.second, it.value()));
                     if (row_col.first < row_col.second) 
                     {
@@ -392,7 +398,7 @@ class LMI {
     /// Evaluate A_0 + \[A_0 + \sum x_i A_i \]
     /// \param[in] x The input vector
     /// \param[out] ret The output matrix
-    void evaluate(VT const & x, MT& ret) const {
+    void evaluate(VT const & x, MT& ret) {
         lmi_evaluator.evaluateWithoutA0(x, ret);
         //evaluateWithoutA0(x, ret);
 
@@ -403,7 +409,7 @@ class LMI {
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res)  const {
+    void evaluateWithoutA0(const VT& x, MT& res) {
         lmi_evaluator.evaluateWithoutA0(x, res);
         /*
 //#define EVALUATE_WITHOUT_A0_NAIVE

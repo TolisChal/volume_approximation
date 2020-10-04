@@ -14,6 +14,49 @@
 #include "chrono"
 
 
+template <typename MT>
+struct matrix_initializer
+{
+    static void initilize(MT &, MT &, MT &, MT &, MT &, int const& ) {}
+};
+
+
+template <typename NT>
+struct matrix_initializer<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> >
+{
+
+typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+
+static void initialize(MT &A, MT &B, MT &C, MT &X, MT &Y, int const& m)
+{
+    A.setZero(m, m);
+    B.setZero(m, m);
+    C.setZero(m, m);
+
+    X.setZero(2*m, 2*m);
+    Y.setZero(2*m, 2*m);
+}
+};
+
+
+template <typename NT>
+struct matrix_initializer<Eigen::SparseMatrix<NT> >
+{
+
+typedef Eigen::SparseMatrix<NT> MT;
+
+static void initialize(MT &A, MT &B, MT &C, MT &X, MT &Y, int const& m)
+{
+    A = MT(m, m);
+    B = MT(m, m);
+    C = MT(m, m);
+
+    X = MT(2*m, 2*m);
+    Y = MT(2*m, 2*m);
+}
+};
+
+
 /// This class manipulates a spectrahedron, described by a LMI
 /// \tparam NT Numeric Type
 /// \tparam MT Matrix Type
@@ -56,15 +99,18 @@ public:
             computed_XY = computed_C = computed_A = false;
         }
 
-        void set_mat_size(int const& m) {
-            A.setZero(m, m);
-            B.setZero(m, m);
-            C.setZero(m, m);
+        void set_mat_size(int const& m) 
+        {
+            matrix_initializer<MT>::initialize(A, B, C, X, Y, m);
+
+            //A.setZero(m, m);
+            //B.setZero(m, m);
+            //C.setZero(m, m);
 
             eigenvector.setZero(m);
 
-            X.setZero(2*m, 2*m);
-            Y.setZero(2*m, 2*m);
+            //X.setZero(2*m, 2*m);
+            //Y.setZero(2*m, 2*m);
         }
     };
 

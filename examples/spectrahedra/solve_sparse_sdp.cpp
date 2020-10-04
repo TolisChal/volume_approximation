@@ -46,8 +46,8 @@ int main(int argc, char* argv[]) {
     in.open(fileName, std::ifstream::in);
 
     // read the file
-    SdpaFormatManager<NT> sdpaFormatManager;
-    sdpaFormatManager.loadSDPAFormatFile(in, spectrahedron, objFunction);
+    //SdpaFormatManager<NT> sdpaFormatManager;
+    //sdpaFormatManager.loadSDPAFormatFile(in, spectrahedron, objFunction);
 
     // We will need an initial interior point. In this
     // spectrahedron the origin (zero point) is interior
