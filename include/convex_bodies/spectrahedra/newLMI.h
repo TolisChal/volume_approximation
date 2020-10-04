@@ -67,7 +67,7 @@ public:
         #else
 
             a.noalias() = vectorMatrix * x;
-            res.setZero(m,m);
+            res.setZero(m,m); //check if we can avoid it
 
             double *data = res.data();
             double *v = a.data();
@@ -107,54 +107,121 @@ struct evaluate_lmi<Eigen::SparseMatrix<NT> > {
 public:
     typedef Eigen::SparseMatrix<NT> MT;
     /// The type for Eigen vector
-    //typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+    //typedef Eigen::SparseVector<NT> VT;
 
     MT vectorMatrix, a;
+    std::vector<MT> matrices_as_vectors;
+    int _m, _d;
 
-    int get_position_in_column(int const& i, int const& j)
+    typedef Eigen::Triplet<NT> T;
+    std::vector<T> tripletList;
+
+    int get_position_in_column(int const& i, int const& j, int const& m)
     {
-        return i+j; // implement
+        return i*(m-1) - ((i-1)*i)/2 + j;
+    }
+
+    std::pair<int, int> get_position_in_matrix(int const& pos, int const& m)
+    {
+        int pos = 2 * pos, 2m_3 = 2 * m - 3;
+        for (int i = 0; i < m; i++)
+        {
+            col = (pos2 - i*i - i * 2m_3) / 2;
+            if (col >= i) {
+                row = i;
+                break;
+            }
+        }
+
+        return std::pair<int, int> (row, col);
     }
 
     void setVectorMatrix(int const& m, int const& d, std::vector<MT> const& matrices) 
     {
-        int newM = m * (m + 1) / 2, pos;
-
+        _m = m;
+        _d = d;
         // allocate memory
-        vectorMatrix = MT(newM, d);
-        a = MT(m, 1);
+        int newM = m * (m + 1) / 2, pos;
+        matrices_as_vectors.reserve(d);
+        vectorMatrix.resize(newM, 1);
+        //vectorMatrix = MT(newM, d);
+        a.resize(m, 1);
 
         // initialze iterator and skip A_0
         typename std::vector<MT>::iterator iter = matrices.begin();
         iter++;
 
-        typedef Eigen::Triplet<NT> T;
-        std::vector<T> tripletList;
-
         // copy elements
         int atMatrix = 0;
-        tripletList.clear();
+        
 
         for (; iter != matrices.end(); iter++, atMatrix++) 
         {
+            vectorMatrix.resize(newM, 1); //TODO: check if we can remove this resize()
+            tripletList.clear();
             for (int k=0; k<(*iter).outerSize(); ++k)
             {
                 for (SparseMatrix<NT>::InnerIterator it((*iter), k); it; ++it)
                 {
-                    pos = get_position_in_column(it.row(), it.col());
-                    tripletList.push_back(T(pos, atMatrix, it.value()));
+                    if (it.row() <= it.col()) {
+                        pos = get_position_in_column(it.row(), it.col(), m);
+                        tripletList.push_back(T(pos, 0, it.value()));
+                    }
                     //it.value();
                     //it.row();   // row index
                     //it.col();   // col index (here it is equal to k)
                     //it.index(); // inner index, here it is equal to it.row()
                 }
             }
+            vectorMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+            matrices_as_vectors.push_back(vectorMatrix);
         }
+    }
+    
+    /// Compute  \[x_1*A_1 + ... + x_n A_n]
+    /// \param[in] x Input vector
+    /// \param[out] res Output matrix
+    void evaluateWithoutA0(const VT& x, MT& res)  const {
+        //#define EVALUATE_WITHOUT_A0_NAIVE
+        #if defined(EVALUATE_WITHOUT_A0_NAIVE)
+            res.resize(m,m);
+            typename std::vector<MT>::iterator it;
+
+            int i = 0;
+            it = matrices.begin();
+            ++it; // skip A0
+            for (; it != matrices.end(); it++, i++)
+                res.noalias() += x(i) * (*it);
+        #else
+
+            std::pair<int, int> row_col;
+
+            a = matrices_as_vectors[0] * x(0);
+            typename std::vector<MT>::iterator iter = matrices_as_vectors.begin();
+            iter++;
+            res.resize(_m, _m);
+            for (int i = 1; i < _d; i++, iter++) {
+                a += (*iter) * x(i);
+            }
+
+            tripletList.clear();
+            for (int k = 0; k < a.outerSize(); ++k)
+            {
+                for (MT::InnerIterator it(a, k); it; ++it)
+                {
+                    row_col = get_position_in_matrix (it.row(), _m);
+                    tripletList.push_back(T(row_col.first, row_col.second, it.value()));
+                    if (row_col.first < row_col.second) 
+                    {
+                        tripletList.push_back(T(row_col.second, row_col.first, it.value()));
+                    }
+                }
+            }
+            res.setFromTriplets(tripletList.begin(), tripletList.end());
+
+        #endif
 
     }
-    vectorMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
-
-}
 
 };
 
@@ -166,6 +233,7 @@ public:
 #endif
 
 
+/*
 /// This class handles a linear matrix inequality of the form \[A_0 +  \sum x_i A_i <= 0\],
 /// where <= denotes negative definiteness
 /// @tparam NT Numeric Type
@@ -224,19 +292,19 @@ class LMI {
     /// \param[in] Input vector: lmi(p)*e = 0, e != 0
     /// \param[out] ret The normalized gradient of the determinant of the LMI at p
     void normalizedDeterminantGradient(const VT& p, const VT& e, VT& ret) {}
-};
+};*/
 
 
 /// This class handles a linear matrix inequality of the form \[A_0 +  \sum x_i A_i\]
 /// A template specialization for dense Eigen matrices and vectors
 /// @tparam NT Numeric Type
-template<typename NT>
-class LMI<NT, Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
+template<typename NT, typename MT, typename VT>
+class LMI {
     public:
     /// Eigen matrix type
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
+    //typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
     /// Eigen vector type
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
+    //typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
 
     /// The matrices A_0, A_i
     std::vector<MT> matrices;
@@ -437,7 +505,7 @@ class LMI<NT, Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic>, Eigen::Matrix<NT,
 
 
 
-
+/*
 
 /// This class handles a linear matrix inequality of the form \[A_0 +  \sum x_i A_i\]
 /// A template specialization for dense Eigen matrices and vectors
@@ -634,7 +702,7 @@ class LMI<NT, Eigen::SparseMatrix<NT>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
         return isNegativeSemidefinite(mat);
     }
 
-};
+};*/
 
 #endif //VOLESTI_LMI_H
 

@@ -89,8 +89,11 @@ double solve_sdp(_Spectrahedron & spectrahedron, Point const & objectiveFunction
     RNGType rng(spectrahedron.dimension());
     typename HMC::Settings hmc_settings = typename HMC::Settings(settings.walkLength, rng, objectiveFunction, temperature, diameter);
     HMC hmcRandomWalk = HMC(hmc_settings);
+
     // this data structure help us move computations between function calls
     typename HMC::PrecomputedValues hmcPrecomputedValues;
+    hmcPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
+
     NT previous_min = objectiveFunction.dot(solution);
 
     /******** solve *********/

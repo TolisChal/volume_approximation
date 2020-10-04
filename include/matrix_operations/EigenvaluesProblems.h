@@ -303,18 +303,18 @@ public:
         // check if the matrices X,Y are computed.
         //if yes, update them; otherwise compute them from scratch
         if (!updateOnly) {
-            X.resize(2 * matrixDim, 2 * matrixDim);
-            Y.resize(2 * matrixDim, 2 * matrixDim);
+            //X.resize(2 * matrixDim, 2 * matrixDim);
+            //Y.resize(2 * matrixDim, 2 * matrixDim);
 
             Y.block(matrixDim, matrixDim, matrixDim, matrixDim) = -1 * C;
-            Y.block(0, matrixDim, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
-            Y.block(matrixDim, 0, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
+            //Y.block(0, matrixDim, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
+            //Y.block(matrixDim, 0, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
             Y.block(0, 0, matrixDim, matrixDim) = A;
 
             X.block(0, matrixDim, matrixDim, matrixDim) = C;
             X.block(0, 0, matrixDim, matrixDim) = B;
             X.block(matrixDim, 0, matrixDim, matrixDim) = C;
-            X.block(matrixDim, matrixDim, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
+            //X.block(matrixDim, matrixDim, matrixDim, matrixDim) = MT::Zero(matrixDim, matrixDim);
         } else {
             Y.block(matrixDim, matrixDim, matrixDim, matrixDim) = -1 * C;
 
@@ -353,7 +353,7 @@ public:
         // the eivector has dimension 2*matrixDim
         // while the eigenvector of the original problem has dimension matrixDim
         // retrieve the eigenvector by keeping only #matrixDim coordinates.
-        eigenvector.resize(matrixDim);
+        //eigenvector.setZero(matrixDim);
 
 #if defined(EIGEN_EIGENVALUES_SOLVER) || defined (SPECTRA_EIGENVALUES_SOLVER)
         for (int i = 0; i < matrixDim; i++)

@@ -55,6 +55,17 @@ public:
         void resetFlags() {
             computed_XY = computed_C = computed_A = false;
         }
+
+        void set_mat_size(int const& m) {
+            A.setZero(m, m);
+            B.setZero(m, m);
+            C.setZero(m, m);
+
+            eigenvector.setZero(m);
+
+            X.setZero(2*m, 2*m);
+            Y.setZero(2*m, 2*m);
+        }
     };
 
 
