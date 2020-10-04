@@ -23,14 +23,19 @@ public:
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
 
     MT vectorMatrix;
-    VT a;
+    //VT a;
 
-    void setVectorMatrix(int const& newM, int const& d, std::vector<MT> const& matrices) {
+    int _m, _d;
+
+    void setVectorMatrix(int const& m, int const& d, std::vector<MT> &matrices) 
+    {
+        _m = m;
+        _d = d;
         int newM = m * (m + 1) / 2;
 
         // allocate memory
         vectorMatrix.setZero(newM, d);
-        a.setZero(m);
+        //a.setZero(m);
 
         // initialze iterator and skip A_0
         typename std::vector<MT>::iterator iter = matrices.begin();
@@ -53,10 +58,10 @@ public:
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res)  const {
+    void evaluateWithoutA0(const VT &x, MT& res)  const {
         //#define EVALUATE_WITHOUT_A0_NAIVE
         #if defined(EVALUATE_WITHOUT_A0_NAIVE)
-            res.setZero(m,m);
+            res.setZero(_m, _m);
             typename std::vector<MT>::iterator it;
 
             int i = 0;
@@ -66,8 +71,8 @@ public:
                 res.noalias() += x(i) * (*it);
         #else
 
-            a.noalias() = vectorMatrix * x;
-            res.setZero(m,m); //check if we can avoid it
+            VT a = vectorMatrix * x;
+            res.setZero(_m, _m); //check if we can avoid it
 
             double *data = res.data();
             double *v = a.data();
@@ -75,11 +80,11 @@ public:
             int at = 0;
 
             // copy lower triangular
-            for (int at_col = 0; at_col < m; at_col++) {
-                int col_offset = at_col * m;
+            for (int at_col = 0; at_col < _m; at_col++) {
+                int col_offset = at_col * _m;
                 double *target = data + col_offset + at_col;
 
-                for (int at_row = at_col; at_row < m; at_row++) {
+                for (int at_row = at_col; at_row < _m; at_row++) {
                     *(target++) = *(v++);
                 }
             }
@@ -87,12 +92,12 @@ public:
             v = a.data();
 
             // copy upper triangular
-            for (int at_row = 0; at_row < m; at_row++) {
-                double *target = data + at_row + at_row * m;
+            for (int at_row = 0; at_row < _m; at_row++) {
+                double *target = data + at_row + at_row * _m;
 
-                for (int at_col = at_row; at_col < m; at_col++) {
+                for (int at_col = at_row; at_col < _m; at_col++) {
                     *target = *(v++);
-                    target = target + m;
+                    target = target + _m;
                 }
             }
         #endif
@@ -106,10 +111,12 @@ template <typename NT>
 struct evaluate_lmi<Eigen::SparseMatrix<NT> > {
 public:
     typedef Eigen::SparseMatrix<NT> MT;
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+
     /// The type for Eigen vector
     //typedef Eigen::SparseVector<NT> VT;
 
-    MT vectorMatrix, a;
+    MT vectorMatrix;//, a;
     std::vector<MT> matrices_as_vectors;
     int _m, _d;
 
@@ -123,10 +130,10 @@ public:
 
     std::pair<int, int> get_position_in_matrix(int const& pos, int const& m)
     {
-        int pos = 2 * pos, 2m_3 = 2 * m - 3;
+        int pos2 = 2 * pos, m2_3 = 2 * m - 3, row, col;
         for (int i = 0; i < m; i++)
         {
-            col = (pos2 - i*i - i * 2m_3) / 2;
+            col = (pos2 - i*i - i * m2_3) / 2;
             if (col >= i) {
                 row = i;
                 break;
@@ -136,7 +143,7 @@ public:
         return std::pair<int, int> (row, col);
     }
 
-    void setVectorMatrix(int const& m, int const& d, std::vector<MT> const& matrices) 
+    void setVectorMatrix(int const& m, int const& d, std::vector<MT> &matrices) 
     {
         _m = m;
         _d = d;
@@ -145,7 +152,7 @@ public:
         matrices_as_vectors.reserve(d);
         vectorMatrix.resize(newM, 1);
         //vectorMatrix = MT(newM, d);
-        a.resize(m, 1);
+        //a.resize(m, 1);
 
         // initialze iterator and skip A_0
         typename std::vector<MT>::iterator iter = matrices.begin();
@@ -161,7 +168,7 @@ public:
             tripletList.clear();
             for (int k=0; k<(*iter).outerSize(); ++k)
             {
-                for (SparseMatrix<NT>::InnerIterator it((*iter), k); it; ++it)
+                for (typename MT::InnerIterator it((*iter), k); it; ++it)
                 {
                     if (it.row() <= it.col()) {
                         pos = get_position_in_column(it.row(), it.col(), m);
@@ -196,7 +203,7 @@ public:
 
             std::pair<int, int> row_col;
 
-            a = matrices_as_vectors[0] * x(0);
+            MT a = matrices_as_vectors[0] * x(0);
             typename std::vector<MT>::iterator iter = matrices_as_vectors.begin();
             iter++;
             res.resize(_m, _m);
@@ -207,7 +214,7 @@ public:
             tripletList.clear();
             for (int k = 0; k < a.outerSize(); ++k)
             {
-                for (MT::InnerIterator it(a, k); it; ++it)
+                for (typename MT::InnerIterator it(a, k); it; ++it)
                 {
                     row_col = get_position_in_matrix (it.row(), _m);
                     tripletList.push_back(T(row_col.first, row_col.second, it.value()));

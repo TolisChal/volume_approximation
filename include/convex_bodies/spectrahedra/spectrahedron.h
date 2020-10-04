@@ -10,7 +10,7 @@
 #ifndef VOLESTI_SPECTRAHEDRON_H
 #define VOLESTI_SPECTRAHEDRON_H
 
-#include "LMI.h"
+#include "newLMI.h"
 #include "chrono"
 
 
