@@ -39,7 +39,7 @@ public:
         /// The type of the spectrahedron
         typedef Spectrahedron<NT, Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic>, Eigen::Matrix<NT,Eigen::Dynamic,1>> SPECTRAHEDRON;
         /// Type for internal structure of class Spectrahedron
-        typedef typename SPECTRAHEDRON::PrecomputedValues PrecomputedValues;
+        typedef typename SPECTRAHEDRON::PrecomputedValues2 PrecomputedValues;
 
         /// The matrix/vector types we use
         typedef typename SPECTRAHEDRON::MATRIX_TYPE MT;
@@ -269,7 +269,7 @@ public:
         /// The type of the spectrahedron
         typedef Spectrahedron<NT, Eigen::SparseMatrix<NT>, Eigen::Matrix<NT,Eigen::Dynamic,1>> SPECTRAHEDRON;
         /// Type for internal structure of class Spectrahedron
-        typedef typename SPECTRAHEDRON::PrecomputedValues PrecomputedValues;
+        typedef typename SPECTRAHEDRON::PrecomputedValues2 PrecomputedValues;
 
         /// The matrix/vector types we use
         typedef typename SPECTRAHEDRON::MATRIX_TYPE MT;

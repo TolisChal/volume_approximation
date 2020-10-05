@@ -321,6 +321,7 @@ class LMI {
 
     /// The matrices A_0, A_i
     std::vector<MT> matrices;
+    MT sum_Ai;
 
     /// structure to evaluate the lmi fast
     evaluate_lmi<MT> lmi_evaluator;
@@ -338,7 +339,10 @@ class LMI {
 
     /// Creates A LMI object
     /// \param[in] matrices The matrices A_0, A_i
-    LMI(std::vector<MT>& matrices) {
+    LMI(std::vector<MT>& matrices) 
+    {
+        d = matrices.size() - 1;
+        m = matrices[0].rows();
         typename std::vector<MT>::iterator it = matrices.begin();
 
         while (it!=matrices.end()) {
@@ -346,8 +350,8 @@ class LMI {
             it++;
         }
 
-        d = matrices.size() - 1;
-        m = matrices[0].rows();
+        
+        
         //setVectorMatrix();
         lmi_evaluator.setVectorMatrix(m, d, matrices);
     }
@@ -462,11 +466,11 @@ class LMI {
     /// \param[in] Input vector: lmi(p)*e = 0, e != 0
     /// \param[out] ret The normalized gradient of the determinant of the LMI at p
     void normalizedDeterminantGradient(const VT& p, const VT& e, VT& ret) {
-        ret.setZero(d);
+        //ret.setZero(d);
 
         // i-th coordinate of the determinant is e^T * A_i * e
         for (int i = 0; i < d; i++) {
-            ret(i) = e.dot(matrices[i+1] * e);
+            ret(i) = e.transpose() * (matrices[i+1].template selfadjointView< Eigen::Upper >() * e);
         }
 
         ret.normalize();

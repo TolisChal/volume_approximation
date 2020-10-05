@@ -36,6 +36,8 @@ public:
     /// Pointer to matrix B
     MT const *B;
 
+    VT v;
+
     /// The decomposition we will use
     /// If PARTIAL_LU_DECOMPOSITION is defined, use the Eigen partial LU decomposition,
     /// otherwise full. The partial is faster but assumes that the matrix has full rank.
@@ -47,15 +49,18 @@ public:
 
     /// The LU decomposition of B
     Decomposition Blu;
+    //LLT<MT> llt;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
     DenseProductMatrix(MT const *A, MT const *B) : A(A), B(B) {
-        Blu = Decomposition(*B);
+        Blu.compute(*B);
         _rows = A->rows();
         _cols = B->cols();
+
+        v.setZero(_rows);
     }
 
     ///Required by Spectra
@@ -81,10 +86,13 @@ public:
         // and next of y to y_out
         //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
         Eigen::Map<const VT> x(x_in, _cols);
-        VT const v = *A * x;
+        //VT const v = *A * x;
+        int r = _rows / 2;
+        v.block(r, 0, r, 1).noalias() = (*A).block(r, r, r, r).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() = (*A).block(0, 0, r, r).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1);
 
         Eigen::Map<VT> y(y_out, _rows);
-        y.noalias() = Blu.solve(v);
+        y.noalias() = Blu.solve(-v);
     }
 
     /// Required by arpack.
@@ -98,10 +106,14 @@ public:
         // and next of y to y_out
         Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
         //Eigen::Map<const VT> x(x_in, _cols);
-        VT const v = *A * x;
+        //VT const v2 = *A * x;
+        int r = _rows / 2;
+    
+        v.block(r, 0, r, 1).noalias() = (*A).block(r, r, r, r).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() = (*A).block(0, 0, r, r).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1);
 
         Eigen::Map<VT> y(y_out, _rows);
-        y.noalias() = Blu.solve(v);
+        y.noalias() = Blu.solve(-v);
     }
 };
 #endif //VOLESTI_DENSEPRODUCTMATRIX_H

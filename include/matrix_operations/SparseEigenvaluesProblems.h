@@ -243,8 +243,8 @@ public:
         // This makes the transformation to standard eigenvalue problem. See class for more info.
         // We have the generalized problem  A + lB, or Av = -lBv
         // This class computes the matrix product vector Mv, where M = -B * A^[-1]
-        MT _B = -1 * B; // TODO avoid this allocation
-        SparseProductMatrix<NT> M(&_B, &A);
+        //MT _B = -1 * B; // TODO avoid this allocation
+        SparseProductMatrix<NT> M(&B, &A);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.

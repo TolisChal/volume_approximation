@@ -13,48 +13,102 @@
 #include "newLMI.h"
 #include "chrono"
 
-
 template <typename MT>
-struct matrix_initializer
-{
-    static void initilize(MT &, MT &, MT &, MT &, MT &, int const& ) {}
+struct PrecomputedValues {
+    
 };
 
-
+/// Among successive calls of this class methods, we may need to pass data
+/// from one call to the next, to avoid repeating computations, or to efficiently update values
+/// Warning: this struct assists in many methods; perhaps for different methods use different instances
 template <typename NT>
-struct matrix_initializer<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> >
-{
+struct PrecomputedValues<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic>> {
 
-typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
 
-static void initialize(MT &A, MT &B, MT &C, MT &X, MT &Y, int const& m)
-{
-    A.setZero(m, m);
-    B.setZero(m, m);
-    C.setZero(m, m);
+    /// These flags indicate whether the corresponding matrices are computed
+    /// if yes, we can use them and not compute them fro scratch
+    bool computed_A = false;
+    bool computed_C = false;
+    bool computed_XY = false;
 
-    X.setZero(2*m, 2*m);
-    Y.setZero(2*m, 2*m);
-}
+    /// The matrices the method positiveIntersection receives from its previous call
+    /// if the flag first_positive_intersection is true.
+    /// Matrix A is also used in coordinateIntersection
+    MT A, B, C, X, Y;
+
+    /// In method positive_intersect, the distance we are computing corresponds
+    /// to the minimum positive eigenvalue of a quadratic eigenvalue problem.
+    /// This will hold the eigenvector for that eigenvalue
+    VT eigenvector;
+
+    /// Sets all flags to false
+    void resetFlags() {
+        computed_XY = computed_C = computed_A = false;
+    }
+
+    void set_mat_size(int const& m) 
+    {
+        //matrix_initializer<MT>::initialize(A, B, C, X, Y, m);
+
+        A.setZero(m, m);
+        B.setZero(m, m);
+        C.setZero(m, m);
+
+        eigenvector.setZero(m);
+
+        X.setZero(2*m, 2*m);
+        Y.setZero(2*m, 2*m);
+    }
 };
 
 
+/// Among successive calls of this class methods, we may need to pass data
+/// from one call to the next, to avoid repeating computations, or to efficiently update values
+/// Warning: this struct assists in many methods; perhaps for different methods use different instances
 template <typename NT>
-struct matrix_initializer<Eigen::SparseMatrix<NT> >
-{
+struct PrecomputedValues<Eigen::SparseMatrix<NT>> {
 
-typedef Eigen::SparseMatrix<NT> MT;
+    typedef Eigen::SparseMatrix<NT> MT;
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
 
-static void initialize(MT &A, MT &B, MT &C, MT &X, MT &Y, int const& m)
-{
-    A = MT(m, m);
-    B = MT(m, m);
-    C = MT(m, m);
+    /// These flags indicate whether the corresponding matrices are computed
+    /// if yes, we can use them and not compute them fro scratch
+    bool computed_A = false;
+    bool computed_C = false;
+    bool computed_XY = false;
 
-    X = MT(2*m, 2*m);
-    Y = MT(2*m, 2*m);
-}
+    /// The matrices the method positiveIntersection receives from its previous call
+    /// if the flag first_positive_intersection is true.
+    /// Matrix A is also used in coordinateIntersection
+    MT A, B, C, X, Y;
+
+    /// In method positive_intersect, the distance we are computing corresponds
+    /// to the minimum positive eigenvalue of a quadratic eigenvalue problem.
+    /// This will hold the eigenvector for that eigenvalue
+    VT eigenvector;
+
+    /// Sets all flags to false
+    void resetFlags() {
+        computed_XY = computed_C = computed_A = false;
+    }
+
+    void set_mat_size(int const& m) 
+    {
+        //matrix_initializer<MT>::initialize(A, B, C, X, Y, m);
+
+        A = MT(m, m);
+        B = MT(m, m);
+        C = MT(m, m);
+
+        eigenvector.setZero(m);
+
+        X = MT(2*m, 2*m);
+        Y = MT(2*m, 2*m);
+    }
 };
+
 
 
 /// This class manipulates a spectrahedron, described by a LMI
@@ -69,54 +123,15 @@ public:
     typedef NT NUMERIC_TYPE;
     typedef MT MATRIX_TYPE;
     typedef VT VECTOR_TYPE;
+    typedef PrecomputedValues<MT> PrecomputedValues2;
 
     /// The type of a pair of NT
     typedef std::pair<NT, NT> pairNT;
 
-    /// Among successive calls of this class methods, we may need to pass data
-    /// from one call to the next, to avoid repeating computations, or to efficiently update values
-    /// Warning: this struct assists in many methods; perhaps for different methods use different instances
-    struct PrecomputedValues {
-
-        /// These flags indicate whether the corresponding matrices are computed
-        /// if yes, we can use them and not compute them fro scratch
-        bool computed_A = false;
-        bool computed_C = false;
-        bool computed_XY = false;
-
-        /// The matrices the method positiveIntersection receives from its previous call
-        /// if the flag first_positive_intersection is true.
-        /// Matrix A is also used in coordinateIntersection
-        MT A, B, C, X, Y;
-
-        /// In method positive_intersect, the distance we are computing corresponds
-        /// to the minimum positive eigenvalue of a quadratic eigenvalue problem.
-        /// This will hold the eigenvector for that eigenvalue
-        VT eigenvector;
-
-        /// Sets all flags to false
-        void resetFlags() {
-            computed_XY = computed_C = computed_A = false;
-        }
-
-        void set_mat_size(int const& m) 
-        {
-            matrix_initializer<MT>::initialize(A, B, C, X, Y, m);
-
-            //A.setZero(m, m);
-            //B.setZero(m, m);
-            //C.setZero(m, m);
-
-            eigenvector.setZero(m);
-
-            //X.setZero(2*m, 2*m);
-            //Y.setZero(2*m, 2*m);
-        }
-    };
-
 
     /// The dimension of the spectrahedron
     unsigned int d;
+    VT grad;
 
     /// The linear matrix inequality that describes the spectrahedron
     LMI<NT, MT, VT> lmi;
@@ -127,6 +142,7 @@ public:
     /// \param[in] lmi The linear matrix inequality that describes the spectrahedron
     Spectrahedron(const LMI<NT, MT, VT>& lmi) : lmi(lmi) {
         d = lmi.dimension();
+        grad.setZero(d);
     }
 
 
@@ -137,7 +153,7 @@ public:
     /// \param[in] c Input vector
     /// \param[in, out] precomputedValues Holds matrices A, C
     void createMatricesForPositiveIntersection(const VT& a, const VT& b, const VT& c,
-            PrecomputedValues& precomputedValues) {
+            PrecomputedValues2& precomputedValues) {
         // check if matrices A, C are ready
         // if not compute them
         if (!precomputedValues.computed_A) {
@@ -163,8 +179,8 @@ public:
     /// \param[in] c Input Vector, the constant term
     /// \param[in, out] precomputedValues Data we move between successive method calls
     /// \returns The distance d
-    NT positiveIntersection(VT const & a, VT const & b, VT const & c, PrecomputedValues& precomputedValues) {
-        unsigned int matrixDim = lmi.sizeOfMatrices();
+    NT positiveIntersection(VT const & a, VT const & b, VT const & c, PrecomputedValues2& precomputedValues) {
+                            unsigned int matrixDim = lmi.sizeOfMatrices();
 
         // create matrices A, B, C
         createMatricesForPositiveIntersection(a, b, c, precomputedValues);
@@ -193,7 +209,7 @@ public:
     /// \param[in] a Input vector
     /// \param[in] coordinate Indicator of the i-th coordinate, 1 <= coordinate <= dimension
     /// \return The pair (positive t, negative t) for which we reach the boundary
-    pairNT coordinateIntersection(VT const & a, int const coordinate, PrecomputedValues& precomputedValues) {
+    pairNT coordinateIntersection(VT const & a, int const coordinate, PrecomputedValues2& precomputedValues) {
 
         // prepare the generalized eigenvalue problem A+lB
         // we may not have to compute A!
@@ -214,10 +230,10 @@ public:
     /// \param[out] reflectedDirection The reflected direction
     /// \param[in] precomputedValues Must contain an eigenvalue needed to compute the reflection
     void computeReflection(VT const & point, VT const & incomingDirection, VT& reflectedDirection,
-            PrecomputedValues& precomputedValues) {
+            PrecomputedValues2& precomputedValues) {
 
         // get the gradient of the determinant of the lmi at point
-        VT grad;
+        //VT grad;
         lmi.normalizedDeterminantGradient(point, precomputedValues.eigenvector, grad);
 
         // compute reflected direction
@@ -257,7 +273,7 @@ public:
         boost::random::uniform_real_distribution<> urdist(0, 1);
         boost::random::uniform_int_distribution<> uidist(1, d);
 
-        PrecomputedValues precomputedValues;
+        PrecomputedValues2 precomputedValues;
         VT p = interiorPoint.getCoefficients();
 
         // sample points with walk length set to 1

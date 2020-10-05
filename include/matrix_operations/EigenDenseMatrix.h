@@ -49,7 +49,7 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        _w.noalias() = *M * _v;
+        _w.noalias() = (*M).template selfadjointView< Eigen::Upper >() * _v;
     }
 
     /// Required by ARPACK++ : Multiplies the matrix with vector v
@@ -60,7 +60,7 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        _w.noalias() = *M * _v;
+        _w.noalias() = (*M).template selfadjointView< Eigen::Upper >() * _v;
     }
 
 

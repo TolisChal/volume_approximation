@@ -34,7 +34,7 @@ typedef Spectrahedron <NT, MT, VT> SPECTRAHEDRON;
 
 
 int main(int argc, char* argv[]) {
-    std::string fileName("data/sdp_n2m3.txt");
+    std::string fileName("../../../data/sdp_prob_20_20.txt");
     std::string outputFile("new_sdp_n2m3.txt");
 
     SPECTRAHEDRON spectrahedron;

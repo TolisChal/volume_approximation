@@ -91,7 +91,7 @@ double solve_sdp(_Spectrahedron & spectrahedron, Point const & objectiveFunction
     HMC hmcRandomWalk = HMC(hmc_settings);
 
     // this data structure help us move computations between function calls
-    typename HMC::PrecomputedValues hmcPrecomputedValues;
+    PrecomputedValues<MT> hmcPrecomputedValues;
     hmcPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
 
     NT previous_min = objectiveFunction.dot(solution);
@@ -149,6 +149,112 @@ double solve_sdp(_Spectrahedron & spectrahedron, Point const & objectiveFunction
 
     // return the minimum w.r.t. the original objective function
     return currentMin*objectiveFunctionNorm;
+}
+
+
+
+
+template <typename WalkType, typename _Spectrahedron, typename Point, typename _Settings>
+double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & objectiveFunction, _Settings const & settings,
+         Point const & interiorPoint, Point& solution, double optimal_val, bool verbose = false) {
+
+    // fetch the data types we will use
+    typedef  typename _Spectrahedron::NUMERIC_TYPE NT;
+    typedef  typename _Spectrahedron::MATRIX_TYPE MT;
+    typedef  typename _Spectrahedron::VECTOR_TYPE VT;
+    typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
+    //typedef BoltzmannHMCWalk::Walk<_Spectrahedron, RNGType > HMC;
+    typedef typename WalkType::template Walk<_Spectrahedron, RNGType > HMC;
+
+    // the algorithm requires the objective function to be normalized
+    // we will need to remember the norm
+    VT _objectiveFunctionNormed = objectiveFunction.getCoefficients();
+    NT objectiveFunctionNorm = _objectiveFunctionNormed.norm();
+    _objectiveFunctionNormed.normalize();
+    Point objectiveFunctionNormed = Point(_objectiveFunctionNormed);
+
+    // Estimate the diameter of the spectrahedron
+    // needed for the random walk and for the simulated annealing algorithm
+    NT diameter = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+
+    /******** initialization *********/
+    solution = interiorPoint;
+    // the minimum till last iteration
+    NT currentMin = objectiveFunction.dot(solution);
+    int stepsCount = 0;
+    // initial temperature must be the diameter of the body
+    NT temperature = diameter;
+    // after each iteration, temperature = temperature * tempDecreaseFactor
+    NT tempDecreaseFactor = 1.0 - static_cast<NT>(1.0 / std::pow(spectrahedron.dimension(), settings.k));
+
+    // initialize random walk;
+    RNGType rng(spectrahedron.dimension());
+    typename HMC::Settings hmc_settings = typename HMC::Settings(settings.walkLength, rng, 
+                                                                 objectiveFunctionNormed, 
+                                                                 temperature, diameter);
+    HMC hmcRandomWalk = HMC(hmc_settings);
+    // this data structure help us move computations between function calls
+    PrecomputedValues<MT> hmcPrecomputedValues;
+    hmcPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
+
+    NT previous_min = objectiveFunction.dot(solution);
+
+    /******** solve *********/
+    // if settings.maxNumSteps is negative there is no
+    // bound to the number of steps - stop
+    // when desired relative error is achieved
+    while (std::abs(currentMin - optimal_val) / std::abs(optimal_val) > settings.error) {
+
+        // sample one point with current temperature
+        std::list<Point> randPoints;
+
+        // get a sample under the Boltzmann distribution
+        // using the HMC random walk
+        while (1) {
+            //std::cout << "hello sampling" << "\n";
+            hmcRandomWalk.apply(spectrahedron, solution, settings.walkLength, randPoints, hmcPrecomputedValues);
+
+            // if the sampled point is not inside the spectrahedron (error in boundary oracle),
+            // get a new one
+            if (spectrahedron.isExterior(hmcPrecomputedValues.C)) {
+                if (verbose) std::cout << "Sampled point outside the spectrahedron.\n";
+                randPoints.clear();
+                hmcPrecomputedValues.resetFlags();
+            }
+            else {
+                // update values;
+                solution = randPoints.back();
+                randPoints.clear();
+                //hmcPrecomputedValues.resetFlags();
+                break;
+            }
+        }
+
+        // update current value
+        currentMin = objectiveFunction.dot(solution);
+        ++stepsCount;
+
+        // compute relative error
+        NT relError = relativeError(previous_min, currentMin);
+        previous_min = currentMin;
+
+        if (verbose)
+            std::cout << "Step: " << stepsCount << ", Temperature: " << temperature << ", Min: " << currentMin
+                      << ", Relative error: " << std::abs(currentMin - optimal_val) / std::abs(optimal_val)
+                      << ", optimal_val: " << optimal_val<< ", settings.error: " << settings.error<< "\n";
+
+        // check if we reached desired accuracy
+        //if (relError < settings.error*0.1)
+        //    break;
+
+        // decrease the temperature
+        temperature *= tempDecreaseFactor;
+        hmcRandomWalk.setTemperature(temperature);
+
+    } /* while (stepsCount < settings.maxNumSteps || settings.maxNumSteps < 0) { */
+
+    // return the minimum w.r.t. the original objective function
+    return currentMin;
 }
 
 
