@@ -66,8 +66,8 @@ IF (OPENBLAS_LIB)
 	    add_executable (test_sdp test_sdp.cpp)
             TARGET_LINK_LIBRARIES(test_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
 
-	    #add_executable (solve_sparse_sdp solve_sparse_sdp.cpp)
-            #TARGET_LINK_LIBRARIES(solve_sparse_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
+	    add_executable (solve_sparse_sdp solve_sparse_sdp.cpp)
+            TARGET_LINK_LIBRARIES(solve_sparse_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
 
         ELSE()
             MESSAGE(STATUS "gfortran is required but it could not be found")

@@ -82,7 +82,7 @@ struct PrecomputedValues<Eigen::SparseMatrix<NT>> {
     /// The matrices the method positiveIntersection receives from its previous call
     /// if the flag first_positive_intersection is true.
     /// Matrix A is also used in coordinateIntersection
-    MT A, B, C, X, Y;
+    MT A, B, C;//, X, Y;
 
     /// In method positive_intersect, the distance we are computing corresponds
     /// to the minimum positive eigenvalue of a quadratic eigenvalue problem.
@@ -104,8 +104,8 @@ struct PrecomputedValues<Eigen::SparseMatrix<NT>> {
 
         eigenvector.setZero(m);
 
-        X = MT(2*m, 2*m);
-        Y = MT(2*m, 2*m);
+        //X = MT(2*m, 2*m);
+        //Y = MT(2*m, 2*m);
     }
 };
 
@@ -212,7 +212,7 @@ public:
         // prepare the generalized eigenvalue problem A+lB
         // we may not have to compute A!
         if (!precomputedValues.computed_A)
-            lmi.evaluate(a, precomputedValues.A);
+            lmi.evaluate(a, precomputedValues.A, true);
 
         #if defined(SPARSE_PROBLEM)
             SparseEigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
@@ -272,6 +272,7 @@ public:
         boost::random::uniform_int_distribution<> uidist(1, d);
 
         PrecomputedValues2 precomputedValues;
+        precomputedValues.set_mat_size(getLMI().sizeOfMatrices());
         VT p = interiorPoint.getCoefficients();
 
         // sample points with walk length set to 1

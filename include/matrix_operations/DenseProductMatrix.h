@@ -11,7 +11,7 @@
 #define VOLESTI_DENSEPRODUCTMATRIX_H
 
 #define PARTIAL_LU_DECOMPOSITION
-#define CHOLESKY__NO_PIVOTING_DECOMPOSITION
+#define CHOLESKY_PIVOTING_DECOMPOSITION
 
 /// A wrapper class for dense Eigen matrices in Spectra and ARPACK++
 /// This class will be the wrapper to use the Spectra nonsymemmetric standard eigenvalue Cx = lx solver to
@@ -52,11 +52,11 @@ public:
     typedef Eigen::FullPivLU<MT> lu_decomposition;
 #endif
 
-#if defined(CHOLESKY__NO_PIVOTING_DECOMPOSITION)
+#if defined(CHOLESKY_PIVOTING_DECOMPOSITION)
     //typedef Eigen::PartialPivLU<MT> cholesky_decomposition;
-    typedef Eigen::LDLT<MT, Eigen::Upper> cholesky_decomposition;
+    typedef Eigen::LDLT<MT, Eigen::Lower> cholesky_decomposition;
 #else
-    typedef Eigen::LDLT<MT> cholesky_decomposition;
+    typedef Eigen::LLT<MT> cholesky_decomposition;
 #endif
 
     /// The LU decomposition of B
@@ -108,17 +108,17 @@ public:
         //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
         Eigen::Map<const VT> x(x_in, _cols);
         //VT const v = *A * x;
-        int r = _rows / 2;
-        v.block(r, 0, r, 1).noalias() = (*C).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
-        v.block(0, 0, r, 1).noalias() = -1.0*((*A).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1));
+        //int r = _rows / 2;
+        v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
         //v = v;
 
         Eigen::Map<VT> y(y_out, _rows);
         //y.noalias() = Blu.solve(-v);
 
-        y.block(0, 0, r, 1).noalias() = llt.solve(v.block(r, 0, r, 1));
-        v.block(0, 0, r, 1).noalias() -= (*B).template selfadjointView< Eigen::Upper >() * y.block(0, 0, r, 1);
-        y.block(r, 0, r, 1).noalias() = llt.solve(v.block(0, 0, r, 1));
+        y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
     }
 
     /// Required by arpack.
@@ -133,7 +133,7 @@ public:
         Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
         //Eigen::Map<const VT> x(x_in, _cols);
         //VT const v2 = *A * x;
-        int r = _rows / 2;
+        //int r = _rows / 2;
         //std::cout<<"r = "<<r<<std::endl;
         //std::cout<<"_rows = "<<_rows<<std::endl;
         //std::cout<<"_cols = "<<_cols<<std::endl;
@@ -145,8 +145,8 @@ public:
 
         //std::cout<<"x = "<<x.transpose()<<std::endl;
     
-        v.block(r, 0, r, 1).noalias() = (*C).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
-        v.block(0, 0, r, 1).noalias() = -1.0*((*A).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1));
+        v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
         //v = v;
         //std::cout<<"v = "<<v.transpose()<<std::endl;
 
@@ -157,9 +157,9 @@ public:
         //std::cout<<"\n B = "<<(*B)<<"\n"<<std::endl;
         //std::cout<<"B.block(0, m, m, m) = "<<(*B).block(0, r, r, r)<<"\n"<<std::endl;
         //std::cout<<"v = "<<v.transpose()<<std::endl;
-        y.block(0, 0, r, 1).noalias() = llt.solve(v.block(r, 0, r, 1));
-        v.block(0, 0, r, 1).noalias() -= (*B).template selfadjointView< Eigen::Upper >() * y.block(0, 0, r, 1);
-        y.block(r, 0, r, 1).noalias() = llt.solve(v.block(0, 0, r, 1));
+        y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
         
 
         

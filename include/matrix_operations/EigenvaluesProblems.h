@@ -69,7 +69,7 @@ public:
         // the smallest eigenvalue of M.
         ARNonSymStdEig<NT, EigenDenseMatrix<NT> >
                 dprob(M.cols(), 1, &_M, &EigenDenseMatrix<NT>::MultMv, std::string ("LR"), 8, 0.0, 100*15);
-
+        std::cout << "findSymEigenvalue Arpack\n";
         // compute
         if (dprob.FindEigenvectors() == 0) {
             std::cout << "Failed in findSymEigenvalue\n";
@@ -89,6 +89,7 @@ public:
         // retrieve eigenvalue of the original system
         return dprob.EigenvalueReal(0);
 #elif defined(SPECTRA)
+        std::cout << "findSymEigenvalue Spectra\n";
         // This parameter is for Spectra. It must be larger than #(requested eigenvalues) + 2
         // and smaller than the size of matrix;
         int ncv = M.cols()/10 + 5;
@@ -114,7 +115,6 @@ public:
 //        for (int i = 1; i < eivals.rows(); i++)
 //            if (eivals(i).real() > max)
 //                max = eivals(i).real();
-
         return solver.eigenvalues().maxCoeff();
 #endif
     }

@@ -52,7 +52,7 @@ public:
         MapConstVT _v(v, n);
         MapVT _w(w, m);
 
-        _w = *M * _v;
+       _w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
 
     /// Required by ARPACK++ : Multiplies the matrix with vector v
@@ -63,7 +63,7 @@ public:
         MapConstVT _v(v, n);
         MapVT _w(w, m);
 
-        _w = *M * _v;
+        _w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
 
 

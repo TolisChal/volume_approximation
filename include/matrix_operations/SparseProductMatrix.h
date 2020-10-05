@@ -14,7 +14,7 @@
 #define NDEBUG
 #endif /* NDEBUG */
 
-#define SPARSE_LU_DECOMPOSITION
+#define CHOLESKY_DECOMPOSITION
 //#define SPARSE_CHOLESKY_DECOMPOSITION
 
 /// A wrapper class for dense Eigen matrices in Spectra and ARPACK++
@@ -44,29 +44,46 @@ public:
     MT const *A;
     /// Pointer to matrix B
     MT const *B;
+    /// Pointer to matrix C
+    MT const *C;
+
+    VT v;
+
+    int m;
 
     /// The decomposition we will use
     /// If PARTIAL_LU_DECOMPOSITION is defined, use the Eigen partial LU decomposition,
     /// otherwise full. The partial is faster but assumes that the matrix has full rank.
-#if defined(SPARSE_LU_DECOMPOSITION)
-    typedef Eigen::SparseLU<MT, Eigen::COLAMDOrdering<int> > Decomposition;
+#if defined(CHOLESKY_DECOMPOSITION)
+    typedef Eigen::SimplicialLDLT<MT, Eigen::Lower> Decomposition;
 #else
-    //typedef Eigen::FullPivLU<MT> Decomposition;
+    typedef Eigen::ConjugateGradient<MT, Eigen::Lower> Decomposition;
 #endif
 
     /// The LU decomposition of B
-    Decomposition Blu;
+    Decomposition llt;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    SparseProductMatrix(MT const *A, MT const *B) : A(A), B(B) {
+    SparseProductMatrix(MT const *A, MT const *B, MT const *C) : A(A), B(B), C(C) {
         //Blu = Decomposition(*B);
-        Blu.analyzePattern(*B);
-        Blu.factorize(*B); 
-        _cols = A->cols();
-        _rows = B->rows();
+        _rows = 2*(A->rows());
+        _cols = 2*(B->cols());
+        //_rows *= 2;
+        //_cols *= 2;
+
+        //std::cout<<"_rows = "<<_rows<<std::endl;
+        //std::cout<<"_cols = "<<_cols<<std::endl;
+
+        m = _cols / 2;
+        #if defined(CHOLESKY_DECOMPOSITION)
+            llt.analyzePattern(*C);
+        #endif
+        llt.compute(*C);
+
+        v.setZero(_rows);
     }
 
     ///Required by Spectra
@@ -90,13 +107,19 @@ public:
 
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
-        MapConstVT x(x_in, _cols);
-        //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v = *A * x;
+        Eigen::Map<const VT> x(x_in, _cols);
+        //VT const v = *A * x;
+        //int r = _rows / 2;
+        v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
+        //v = v;
 
-        //Eigen::Map<VT> y(y_out, _rows);
-        MapVT y(y_out, _rows);
-        y.noalias() = Blu.solve(v);
+        Eigen::Map<VT> y(y_out, _rows);
+        //y.noalias() = Blu.solve(-v);
+
+        y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
     }
 
     /// Required by arpack.
@@ -109,12 +132,37 @@ public:
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
         //Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        MapConstVT x(const_cast<double*>(x_in), _cols);
-        VT const v = *A * x;
+        Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
+        //Eigen::Map<const VT> x(x_in, _cols);
+        //VT const v2 = *A * x;
+        //int r = _rows / 2;
+        //std::cout<<"r = "<<r<<std::endl;
+        //std::cout<<"_rows = "<<_rows<<std::endl;
+        //std::cout<<"_cols = "<<_cols<<std::endl;
+        //std::cout<<"rows() = "<<rows()<<std::endl;
+        //std::cout<<"cols() = "<<cols()<<std::endl;
+        //std::cout<<"\n A = "<<(*A)<<"\n"<<std::endl;
+        //std::cout<<"\n B = "<<(*B)<<"\n"<<std::endl;
+        //std::cout<<"\n C = "<<(*C)<<"\n"<<std::endl;
 
-        //Eigen::Map<VT> y(y_out, _rows);
-        MapVT y(y_out, _rows);
-        y.noalias() = Blu.solve(v);
+        //std::cout<<"x = "<<x.transpose()<<std::endl;
+    
+        v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1); //-1.0*
+        //v = v;
+        //std::cout<<"v = "<<v.transpose()<<std::endl;
+
+        Eigen::Map<VT> y(y_out, _rows);
+        //y.noalias() = Blu.solve(v);
+
+        //VT yy(_rows);
+        //std::cout<<"\n B = "<<(*B)<<"\n"<<std::endl;
+        //std::cout<<"B.block(0, m, m, m) = "<<(*B).block(0, r, r, r)<<"\n"<<std::endl;
+        //std::cout<<"v = "<<v.transpose()<<std::endl;
+        y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
+        
     }
 };
 #endif //VOLESTI_DENSEPRODUCTMATRIX_H

@@ -58,7 +58,7 @@ public:
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT &x, MT& res)  const {
+    void evaluateWithoutA0(const VT &x, MT& res, bool complete_mat = false)  const {
         //#define EVALUATE_WITHOUT_A0_NAIVE
         #if defined(EVALUATE_WITHOUT_A0_NAIVE)
             res.setZero(_m, _m);
@@ -72,7 +72,7 @@ public:
         #else
 
             VT a = vectorMatrix * x;
-            res.setZero(_m, _m); //check if we can avoid it
+            //res.setZero(_m, _m); //check if we can avoid it
 
             double *data = res.data();
             double *v = a.data();
@@ -89,15 +89,17 @@ public:
                 }
             }
 
-            v = a.data();
+            if(complete_mat) {
+                v = a.data();
 
-            // copy upper triangular
-            for (int at_row = 0; at_row < _m; at_row++) {
-                double *target = data + at_row + at_row * _m;
+                // copy upper triangular
+                for (int at_row = 0; at_row < _m; at_row++) {
+                    double *target = data + at_row + at_row * _m;
 
-                for (int at_col = at_row; at_col < _m; at_col++) {
-                    *target = *(v++);
-                    target = target + _m;
+                    for (int at_col = at_row; at_col < _m; at_col++) {
+                        *target = *(v++);
+                        target = target + _m;
+                    }
                 }
             }
         #endif
@@ -114,10 +116,11 @@ public:
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
 
     /// The type for Eigen vector
-    //typedef Eigen::SparseVector<NT> VT;
+    typedef Eigen::SparseVector<NT> SpVT;
+    //typedef Eigen::SparseVector<NT>::InnerIterator InIterVec;
 
-    MT vectorMatrix;//, a;
-    std::vector<MT> matrices_as_vectors;
+    SpVT vectorMatrix;//, a;
+    std::vector<SpVT> matrices_as_vectors;
     int _m, _d;
 
     typedef Eigen::Triplet<NT> T;
@@ -150,7 +153,7 @@ public:
         // allocate memory
         int newM = m * (m + 1) / 2, pos;
         matrices_as_vectors.reserve(d);
-        vectorMatrix.resize(newM, 1);
+        vectorMatrix.resize(newM);
         //vectorMatrix = MT(newM, d);
         //a.resize(m, 1);
 
@@ -159,21 +162,21 @@ public:
         iter++;
 
         // copy elements
-        int atMatrix = 0;
+        //int atMatrix = 0;
         //typedef Eigen::Triplet<NT> T;
         //std::vector<T> tripletList;
 
-        for (; iter != matrices.end(); iter++, atMatrix++) 
+        for (; iter != matrices.end(); iter++) 
         {
-            vectorMatrix.resize(newM, 1); //TODO: check if we can remove this resize()
+            vectorMatrix.resize(newM); //TODO: check if we can remove this resize()
             tripletList.clear();
             for (int k=0; k<(*iter).outerSize(); ++k)
             {
-                for (typename MT::InnerIterator it((*iter), k); it; ++it)
+                for (typename SpVT::InnerIterator it((*iter), k); it; ++it)
                 {
-                    if (it.row() <= it.col()) {
+                    if (it.col() <= it.row()) {
                         pos = get_position_in_column(it.row(), it.col(), m);
-                        tripletList.push_back(T(pos, 0, it.value()));
+                        tripletList.push_back(T(pos, it.value()));
                     }
                     //it.value();
                     //it.row();   // row index
@@ -189,7 +192,7 @@ public:
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res) {
+    void evaluateWithoutA0(const VT& x, MT& res, bool complete_mat = false) {
         //#define EVALUATE_WITHOUT_A0_NAIVE
         #if defined(EVALUATE_WITHOUT_A0_NAIVE)
             res.resize(m,m);
@@ -204,11 +207,11 @@ public:
 
             std::pair<int, int> row_col;
 
-            MT a = matrices_as_vectors[0] * x(0);
-            typename std::vector<MT>::iterator iter;
+            SpVT a = matrices_as_vectors[0] * x(0);
+            typename std::vector<SpVT>::iterator iter;
             iter = matrices_as_vectors.begin();
             iter++;
-            res.resize(_m, _m);
+            res.resize(_m, _m); // check if we can avoid it
             for (int i = 1; i < _d; i++, iter++) {
                 a += (*iter) * x(i);
             }
@@ -217,17 +220,13 @@ public:
             //int row;
 
             tripletList.clear();
-            for (int k = 0; k < a.outerSize(); ++k)
-            {
-                for (typename MT::InnerIterator it(a, k); it; ++it)
+            for (typename SpVT::InnerIterator it(a); it; ++it){
+                //Rcpp::Rcout << " i=" << i_.index() << " value=" << i_.value() << std::endl;
+                row_col = get_position_in_matrix(it.index(), _m);
+                tripletList.push_back(T(row_col.second, row_col.first, it.value())); // get the lower triangular
+                if (complete_mat && row_col.first < row_col.second) // get the upper triangular
                 {
-                    //row = int(it.row());
-                    row_col = get_position_in_matrix(it.row(), _m);
                     tripletList.push_back(T(row_col.first, row_col.second, it.value()));
-                    if (row_col.first < row_col.second) 
-                    {
-                        tripletList.push_back(T(row_col.second, row_col.first, it.value()));
-                    }
                 }
             }
             res.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -402,8 +401,8 @@ class LMI {
     /// Evaluate A_0 + \[A_0 + \sum x_i A_i \]
     /// \param[in] x The input vector
     /// \param[out] ret The output matrix
-    void evaluate(VT const & x, MT& ret) {
-        lmi_evaluator.evaluateWithoutA0(x, ret);
+    void evaluate(VT const & x, MT& ret, bool complete_mat = false) {
+        lmi_evaluator.evaluateWithoutA0(x, ret, complete_mat);
         //evaluateWithoutA0(x, ret);
 
         // add A0
@@ -413,8 +412,8 @@ class LMI {
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res) {
-        lmi_evaluator.evaluateWithoutA0(x, res);
+    void evaluateWithoutA0(const VT& x, MT& res, bool complete_mat = false) {
+        lmi_evaluator.evaluateWithoutA0(x, res, complete_mat);
         /*
 //#define EVALUATE_WITHOUT_A0_NAIVE
 #if defined(EVALUATE_WITHOUT_A0_NAIVE)
@@ -470,7 +469,7 @@ class LMI {
 
         // i-th coordinate of the determinant is e^T * A_i * e
         for (int i = 0; i < d; i++) {
-            ret(i) = e.transpose() * (matrices[i+1].template selfadjointView< Eigen::Upper >() * e);
+            ret(i) = e.transpose() * (matrices[i+1].template selfadjointView< Eigen::Lower >() * e);
         }
 
         ret.normalize();
