@@ -172,14 +172,18 @@ public:
     /// \param[in] B Input matrix
     /// \param[out] eigenvector The eigenvector corresponding to the minimum positive eigenvalue
     /// \return The minimum positive eigenvalue
-    NT minPosGeneralizedEigenvalue(MT const & A, MT const & B, CVT& eigenvector) {
+    NT minPosGeneralizedEigenvalue(MT const & A, MT const & B, MT const& C, CVT& eigenvector) {
         NT lambdaMinPositive = std::numeric_limits<NT>::max();
 
 #if defined(EIGEN_EIGENVALUES_SOLVER)
         // use the Generalized eigenvalue solver of Eigen
+        MT X, Y;
+        X.setZero(2*A.rows(), 2*A.rows());
+        Y.setZero(2*A.rows(), 2*A.rows());
+        linearization(A, B, C, X, Y, false);
 
         // compute generalized eigenvalues with Eigen solver
-        Eigen::GeneralizedEigenSolver<MT> ges(A, -B);
+        Eigen::GeneralizedEigenSolver<MT> ges(X, -Y);
 
         // retrieve minimum positive eigenvalue
         typename Eigen::GeneralizedEigenSolver<MT>::ComplexVectorType alphas = ges.alphas();
@@ -207,7 +211,7 @@ public:
         // We have the generalized problem  A + lB, or Av = -lBv
         // This class computes the matrix product vector Mv, where M = -B * A^[-1]
         //MT _B = -1 * B; // TODO avoid this allocation
-        DenseProductMatrix<NT> M(&B, &A);
+        DenseProductMatrix<NT> M(&A, &B, &C);
 
         // This parameter is for Spectra. It must be larger than #(requested eigenvalues) + 2
         // and smaller than the size of matrix;
@@ -224,14 +228,14 @@ public:
 
         //retrieve result and invert to get required eigenvalue of the original problem
         if (eigs.info() != Spectra::SUCCESSFUL) {
-            eigenvector.setZero(A.rows());
+            eigenvector.setZero(2*A.rows());
             return NT(0);
         }
 
         lambdaMinPositive = 1/((eigs.eigenvalues())(0).real());
 
         // retrieve corresponding eigenvector
-        int matrixDim = A.rows();
+        int matrixDim = 2*A.rows();
         eigenvector.resize(matrixDim);
         for (int i = 0; i < matrixDim; i++)
             eigenvector(i) =  (eigs.eigenvectors()).col(0)(i);
@@ -243,19 +247,19 @@ public:
         // We have the generalized problem  A + lB, or Av = -lBv
         // This class computes the matrix product vector Mv, where M = -B * A^[-1]
         //MT _B = -1 * B; // TODO avoid this allocation
-        DenseProductMatrix<NT> M(&B, &A);
+        DenseProductMatrix<NT> M(&A, &B, &C);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
         ARNonSymStdEig<NT, DenseProductMatrix<NT> >
 
-        dprob(A.cols(), 1, &M, &DenseProductMatrix<NT>::MultMv, std::string ("LR"), 8<A.rows() ? 8 : A.rows(), 0.000);//, 100*3);
+        dprob((2*A.cols()), 1, &M, &DenseProductMatrix<NT>::MultMv, std::string ("LR"), 8<(2*A.rows()) ? 8 : (2*A.rows()), 0.000);//, 100*3);
 
         // compute
         if (dprob.FindEigenvectors() == 0) {
             std::cout << "Failed\n";
             // if failed with default (and fast) parameters, try with stable (and slow)
-            dprob.ChangeNcv(A.cols()/10);
+            dprob.ChangeNcv((2*A.cols())/10);
             if (dprob.FindEigenvectors() == 0) {
                 std::cout << "\tFailed Again\n";
                 return NT(0);
@@ -264,7 +268,7 @@ public:
 
 
         // allocate memory for the eigenvector here
-        eigenvector.setZero(A.rows());
+        eigenvector.setZero(2*A.rows());
 
         if (!dprob.EigenvaluesFound()) {
             // if failed to find eigenvalues
@@ -274,10 +278,10 @@ public:
         // retrieve eigenvalue of the original system
         lambdaMinPositive = 1/dprob.EigenvalueReal(0);
 
-        eigenvector.setZero(A.rows());
+        eigenvector.setZero(2*A.rows());
         if (dprob.EigenvectorsFound()) {
             //retrieve corresponding eigenvector
-            for (int i=0 ;i<A.rows() ; i++)
+            for (int i=0 ;i<(2*A.rows()) ; i++)
                 eigenvector(i) = dprob.EigenvectorReal(0, i);
         }
 
@@ -297,7 +301,7 @@ public:
     /// \param[in, out] X
     /// \param[in, out] Y
     /// \param[in, out] updateOnly True if X,Y were previously computed and only B,C changed
-    void linearization(const MT &A, const MT &B, const MT &C, MT &X, MT &Y, bool &updateOnly) {
+    void linearization(const MT &A, const MT &B, const MT &C, MT &X, MT &Y, bool updateOnly) {
         unsigned int matrixDim = A.rows();
 
         // check if the matrices X,Y are computed.
@@ -337,13 +341,14 @@ public:
     /// \param[in, out] updateOnly True if X,Y were previously computed and only B,C changed
     /// \return Minimum positive eigenvalue
     NT
-    minPosQuadraticEigenvalue(MT const & A, MT const &B, MT const &C, MT &X, MT &Y, VT &eigenvector, bool &updateOnly) {
+    minPosQuadraticEigenvalue(MT const & A, MT const &B, MT const &C, VT &eigenvector) 
+    {
         // perform linearization and create generalized eigenvalue problem X+lY
-        linearization(A, B, C, X, Y, updateOnly);
+        //linearization(A, B, C, X, Y, updateOnly);
 
         // solve generalized problem
         CVT eivector;
-        NT lambdaMinPositive = minPosGeneralizedEigenvalue(X, Y, eivector);
+        NT lambdaMinPositive = minPosGeneralizedEigenvalue(A, B, C, eivector);
 
         if (lambdaMinPositive == 0)
             return 0;

@@ -36,7 +36,7 @@ struct PrecomputedValues<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic>> {
     /// The matrices the method positiveIntersection receives from its previous call
     /// if the flag first_positive_intersection is true.
     /// Matrix A is also used in coordinateIntersection
-    MT A, B, C, X, Y;
+    MT A, B, C;//, X, Y;
 
     /// In method positive_intersect, the distance we are computing corresponds
     /// to the minimum positive eigenvalue of a quadratic eigenvalue problem.
@@ -58,8 +58,8 @@ struct PrecomputedValues<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic>> {
 
         eigenvector.setZero(m);
 
-        X.setZero(2*m, 2*m);
-        Y.setZero(2*m, 2*m);
+        //X.setZero(2*m, 2*m);
+        //Y.setZero(2*m, 2*m);
     }
 };
 
@@ -193,10 +193,8 @@ public:
             EigenvaluesProblems<NT, MT, VT> quadraticEigenvaluesProblem;
         #endif
         NT distance = quadraticEigenvaluesProblem.minPosQuadraticEigenvalue(precomputedValues.A, precomputedValues.B,
-                                                                            precomputedValues.C, precomputedValues.X,
-                                                                            precomputedValues.Y,
-                                                                            precomputedValues.eigenvector,
-                                                                            precomputedValues.computed_XY);
+                                                                            precomputedValues.C,
+                                                                            precomputedValues.eigenvector);
 
         return distance;
     }

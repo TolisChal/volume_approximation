@@ -36,6 +36,8 @@ public:
     MT const *A;
     /// Pointer to matrix B
     MT const *B;
+    /// Pointer to matrix C
+    MT const *C;
 
     VT v;
 
@@ -65,13 +67,19 @@ public:
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    DenseProductMatrix(MT const *A, MT const *B) : A(A), B(B) {
+    DenseProductMatrix(MT const *A, MT const *B, MT const *C) : A(A), B(B), C(C) {
         //Blu.compute(*B);
         
-        _rows = A->rows();
-        _cols = B->cols();
+        _rows = 2*(A->rows());
+        _cols = 2*(B->cols());
+        //_rows *= 2;
+        //_cols *= 2;
+
+        //std::cout<<"_rows = "<<_rows<<std::endl;
+        //std::cout<<"_cols = "<<_cols<<std::endl;
+
         m = _cols / 2;
-        llt.compute((*B).block(0, m, m, m));
+        llt.compute(*C);
 
         v.setZero(_rows);
     }
@@ -101,15 +109,15 @@ public:
         Eigen::Map<const VT> x(x_in, _cols);
         //VT const v = *A * x;
         int r = _rows / 2;
-        v.block(r, 0, r, 1).noalias() = (*A).block(r, r, r, r).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
-        v.block(0, 0, r, 1).noalias() = (*A).block(0, 0, r, r).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1);
-        v = -v;
+        v.block(r, 0, r, 1).noalias() = (*C).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() = -1.0*((*A).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1));
+        //v = v;
 
         Eigen::Map<VT> y(y_out, _rows);
         //y.noalias() = Blu.solve(-v);
 
         y.block(0, 0, r, 1).noalias() = llt.solve(v.block(r, 0, r, 1));
-        v.block(0, 0, r, 1).noalias() -= (*B).block(0, 0, r, r) * y.block(0, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() -= (*B).template selfadjointView< Eigen::Upper >() * y.block(0, 0, r, 1);
         y.block(r, 0, r, 1).noalias() = llt.solve(v.block(0, 0, r, 1));
     }
 
@@ -126,10 +134,21 @@ public:
         //Eigen::Map<const VT> x(x_in, _cols);
         //VT const v2 = *A * x;
         int r = _rows / 2;
+        //std::cout<<"r = "<<r<<std::endl;
+        //std::cout<<"_rows = "<<_rows<<std::endl;
+        //std::cout<<"_cols = "<<_cols<<std::endl;
+        //std::cout<<"rows() = "<<rows()<<std::endl;
+        //std::cout<<"cols() = "<<cols()<<std::endl;
+        //std::cout<<"\n A = "<<(*A)<<"\n"<<std::endl;
+        //std::cout<<"\n B = "<<(*B)<<"\n"<<std::endl;
+        //std::cout<<"\n C = "<<(*C)<<"\n"<<std::endl;
+
+        //std::cout<<"x = "<<x.transpose()<<std::endl;
     
-        v.block(r, 0, r, 1).noalias() = (*A).block(r, r, r, r).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
-        v.block(0, 0, r, 1).noalias() = (*A).block(0, 0, r, r).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1);
-        v = -v;
+        v.block(r, 0, r, 1).noalias() = (*C).template selfadjointView< Eigen::Upper >() * x.block(r, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() = -1.0*((*A).template selfadjointView< Eigen::Upper >() * x.block(0, 0, r, 1));
+        //v = v;
+        //std::cout<<"v = "<<v.transpose()<<std::endl;
 
         Eigen::Map<VT> y(y_out, _rows);
         //y.noalias() = Blu.solve(v);
@@ -139,12 +158,12 @@ public:
         //std::cout<<"B.block(0, m, m, m) = "<<(*B).block(0, r, r, r)<<"\n"<<std::endl;
         //std::cout<<"v = "<<v.transpose()<<std::endl;
         y.block(0, 0, r, 1).noalias() = llt.solve(v.block(r, 0, r, 1));
-        v.block(0, 0, r, 1).noalias() -= (*B).block(0, 0, r, r) * y.block(0, 0, r, 1);
+        v.block(0, 0, r, 1).noalias() -= (*B).template selfadjointView< Eigen::Upper >() * y.block(0, 0, r, 1);
         y.block(r, 0, r, 1).noalias() = llt.solve(v.block(0, 0, r, 1));
         
 
-        //std::cout<<"y = "<<y.transpose()<<std::endl;
-        //std::cout<<"yy = "<<yy.transpose()<<"\n"<<std::endl;
+        
+        //std::cout<<"y = "<<y.transpose()<<"\n"<<std::endl;
 
         //y=yy;
     }
