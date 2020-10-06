@@ -17,6 +17,7 @@
 //#define SPECTRA_EIGENVALUES_SOLVER
 /// ARPACK++ standard eigenvalues solver
 #define ARPACK_EIGENVALUES_SOLVER
+#define TOL 1e-04
 
 #include <../../external/arpack++/include/arssym.h>
 #include <../../external/Spectra/include/Spectra/SymEigsSolver.h>
@@ -251,15 +252,19 @@ public:
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
-        ARNonSymStdEig<NT, DenseProductMatrix<NT> >
+        
+        //std::cout<<"rows = "<<A.rows()<<", cols = "<<A.cols()<<std::endl;
+        //const NT tol_ = 1e-04;
+        //std::cout<<"tol_ = "<<tol_<<std::endl;
+        ARNonSymStdEig<NT, DenseProductMatrix<NT> >dprob((2*A.cols()), 1, &M, &DenseProductMatrix<NT>::MultMv, std::string ("LR"), ((2*A.cols()))<250 ? 8 : 6, TOL);//, 150);
 
-        dprob((2*A.cols()), 1, &M, &DenseProductMatrix<NT>::MultMv, std::string ("LR"), 8<(2*A.rows()) ? 8 : (2*A.rows()), 0.000);//, 100*3);
-
-        // compute
+        // compute        
         if (dprob.FindEigenvectors() == 0) {
             std::cout << "Failed\n";
             // if failed with default (and fast) parameters, try with stable (and slow)
-            dprob.ChangeNcv((2*A.cols())/10);
+            dprob.ChangeNcv(12);
+            dprob.ChangeMaxit(2*dprob.GetMaxit());
+            //dprob.ChangeTol(tol_*0.1);
             if (dprob.FindEigenvectors() == 0) {
                 std::cout << "\tFailed Again\n";
                 return NT(0);

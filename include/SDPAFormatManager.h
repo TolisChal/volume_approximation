@@ -33,7 +33,7 @@
 /// \tparam NT Numerical Type
 template <typename NT>
 class SdpaFormatManager {
-private:
+public:
     typedef std::string::iterator string_it;
     typedef std::list<NT> listVector;
 
@@ -96,7 +96,7 @@ private:
         return vector;
     }
 
-public:
+//public:
 
     /// Reads an SDPA format file
     /// \param[in] is An open stram pointing to the file
@@ -202,10 +202,11 @@ public:
             } /* for (auto blockSize : blockStructure) */
 
             //the LMI in SDPA format is >0, I want it <0
-            if (atMatrix == 0) //F0 has - before it in SDPA format, the rest have +
+            if (atMatrix == 0) { //F0 has - before it in SDPA format, the rest have +
                 matrices[atMatrix] = matrix;
-            else
+            }else {
                 matrices[atMatrix] = -1 * matrix;
+            }
         }
 
         // return lmi and objective function
@@ -277,7 +278,160 @@ public:
     void writeSDPAFormatFile(std::ostream &os, Spectrahedron<NT, MT, VT> const & spectrahedron, Point const & objectiveFunction) {
         writeSDPAFormatFile(os, spectrahedron.getLMI().getMatrices(), objectiveFunction.getCoefficients());
     }
+
+
+    
+
 };
+
+/// Reads an SDPA format file
+    /// \param[in] is An open stram pointing to the file
+    /// \param[out] matrices the matrices A0, A1, A2, ..., An
+    /// \param[out] objectiveFunction The objective function of the sdp
+template <typename NT, typename SMT, typename DMT, typename VT>
+void ole(std::ifstream &is, std::vector<SMT> &matrices_sparse, std::vector<DMT> &matrices_dense, VT &objectiveFunction) {
+        
+        typedef std::string::iterator string_it;
+        typedef std::list<NT> listVector;
+        SdpaFormatManager<NT> spm;
+        
+        std::string line;
+        std::string::size_type sz;
+
+        std::getline(is, line, '\n');
+        double ref = 0.00000000000001;
+
+        //skip comments
+        while (spm.isCommentLine(line)) {
+            std::getline(is, line, '\n');
+        }
+
+        //read variables number
+        int variablesNum = spm.fetchNumber(line);
+
+        if (std::getline(is, line, '\n').eof())
+            throw std::runtime_error("Unexpected end of file");
+
+        //read number of blocks
+        int blocksNum = spm.fetchNumber(line);
+
+        if (std::getline(is, line, '\n').eof())
+            throw std::runtime_error("Unexpected end of file");
+
+        //read block structure vector
+        listVector blockStructure = spm.readVector(line);
+
+        if (blockStructure.size() != blocksNum)
+            throw std::runtime_error("Wrong number of blocks");
+
+        if (std::getline(is, line, '\n').eof())
+            throw std::runtime_error("Unexpected end of file");
+
+        //read constant vector
+        listVector constantVector = spm.readVector(line);
+
+        while (constantVector.size() < variablesNum) {
+            if (std::getline(is, line, '\n').eof())
+                throw std::runtime_error("Unexpected end of file");
+
+            listVector t = spm.readVector(line);
+            constantVector.insert(std::end(constantVector), std::begin(t), std::end(t));
+        }
+
+        matrices_dense = std::vector<DMT>(variablesNum + 1);
+        matrices_sparse = std::vector<SMT>(variablesNum + 1);
+        int matrixDim = 0;
+        for (auto x : blockStructure)
+            matrixDim += std::abs((int) x);
+
+        //read constraint matrices
+        for (int atMatrix = 0; atMatrix < matrices_dense.size(); atMatrix++) {
+            DMT matrix;
+            SMT smatrix;
+            matrix.setZero(matrixDim, matrixDim);
+
+            int offset = 0;
+
+            for (auto blockSize : blockStructure) {
+
+                if (blockSize > 0) { //read a block blockSize x blockSize
+                    int at = 0;
+                    int i = 0, j = 0;
+
+                    while (at < blockSize * blockSize) {
+                        if (std::getline(is, line, '\n').eof())
+                            throw 1;
+
+                        listVector vec = spm.readVector(line);
+
+                        for (double value : vec) {
+                            matrix(offset + i, offset + j) = value;
+                            at++;
+                            if (at % (int) blockSize == 0) { // new row
+                                i++;
+                                j = 0;
+                            } else { //new column
+                                j++;
+                            }
+                        }
+                    } /* while (at<blockSize*blockSize) */
+
+                } else { //read diagonal block
+                    blockSize = std::abs(blockSize);
+                    int at = 0;
+
+                    while (at < blockSize) {
+                        if (std::getline(is, line, '\n').eof())
+                            throw 1;
+
+                        listVector vec = spm.readVector(line);
+
+                        for (double value : vec) {
+                            matrix(offset + at, offset + at) = value;
+                            at++;
+                        }
+                    } /* while (at<blockSize) */
+                }
+
+                offset += std::abs(blockSize);
+            } /* for (auto blockSize : blockStructure) */
+
+            //the LMI in SDPA format is >0, I want it <0
+            if (atMatrix == 0) { //F0 has - before it in SDPA format, the rest have +
+                matrices_dense[atMatrix] = matrix;
+                smatrix = matrix.sparseView();
+                //smatrix = smatrix.pruned(ref);
+                matrices_sparse[atMatrix] = smatrix.pruned(ref);
+                //std::cout<<Eigen::MatrixXd(smatrix.pruned(ref));
+            }else {
+                matrices_dense[atMatrix] = -1 * matrix;
+                smatrix = (-1.0*matrix).sparseView();
+                //smatrix = smatrix.pruned(ref);
+                matrices_sparse[atMatrix] = smatrix.pruned(ref);
+                //std::cout<<Eigen::MatrixXd(smatrix.pruned(ref));
+            }
+        }
+
+        // return lmi and objective function
+        objectiveFunction.setZero(variablesNum);
+        int at = 0;
+
+        for (auto value : constantVector)
+            objectiveFunction(at++) = value;
+}
+
+template <typename DMT, typename NT, typename MT, typename VT, typename Point>
+void loadSDPASparseFormatFile(std::ifstream &is, Spectrahedron<NT, MT, VT> &spectrahedron, Point &objectiveFunction) {
+        std::vector<MT> matrices_sparse;
+        std::vector<DMT> matrices_dense;
+        VT coeffs;
+        ole<NT>(is, matrices_sparse, matrices_dense, coeffs);
+        LMI<NT, MT, VT> lmi(matrices_sparse);
+        spectrahedron = Spectrahedron<NT, MT, VT>(lmi);
+        objectiveFunction = Point(coeffs);
+}
+
+    
 
 
 #endif //VOLESTI_SDPA_FORMAT_MANAGER_H

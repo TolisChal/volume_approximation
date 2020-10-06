@@ -119,8 +119,8 @@ public:
     typedef Eigen::SparseVector<NT> SpVT;
     //typedef Eigen::SparseVector<NT>::InnerIterator InIterVec;
 
-    SpVT vectorMatrix;//, a;
-    std::vector<SpVT> matrices_as_vectors;
+    MT vectorMatrix;//, a;
+    std::vector<MT> matrices_as_vectors;
     int _m, _d;
 
     typedef Eigen::Triplet<NT> T;
@@ -153,7 +153,7 @@ public:
         // allocate memory
         int newM = m * (m + 1) / 2, pos;
         matrices_as_vectors.reserve(d);
-        vectorMatrix.resize(newM);
+        vectorMatrix.resize(newM, 1);
         //vectorMatrix = MT(newM, d);
         //a.resize(m, 1);
 
@@ -168,15 +168,16 @@ public:
 
         for (; iter != matrices.end(); iter++) 
         {
-            vectorMatrix.resize(newM); //TODO: check if we can remove this resize()
+            vectorMatrix.resize(newM, 1); //TODO: check if we can remove this resize()
             tripletList.clear();
+            std::cout<<Eigen::MatrixXd((*iter))<<"\n"<<std::endl;
             for (int k=0; k<(*iter).outerSize(); ++k)
             {
-                for (typename SpVT::InnerIterator it((*iter), k); it; ++it)
+                for (typename MT::InnerIterator it((*iter), k); it; ++it)
                 {
                     if (it.col() <= it.row()) {
-                        pos = get_position_in_column(it.row(), it.col(), m);
-                        tripletList.push_back(T(pos, it.value()));
+                        pos = get_position_in_column(it.col(), it.row(), m);
+                        tripletList.push_back(T(pos, 0, it.value()));
                     }
                     //it.value();
                     //it.row();   // row index
@@ -185,7 +186,25 @@ public:
                 }
             }
             vectorMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+            std::cout<<Eigen::MatrixXd(vectorMatrix)<<"\n"<<std::endl;
             matrices_as_vectors.push_back(vectorMatrix);
+
+            
+            /*for (int k=0; k<(*iter).outerSize(); ++k)
+            {
+                for (typename SpVT::InnerIterator it((*iter), k); it; ++it)
+                {
+                    if (it.col() <= it.row()) {
+                        pos = get_position_in_column(it.row(), it.col(), m);
+                        tripletList.push_back(T(pos, 0, it.value()));
+                    }
+                    //it.value();
+                    //it.row();   // row index
+                    //it.col();   // col index (here it is equal to k)
+                    //it.index(); // inner index, here it is equal to it.row()
+                }
+            }*/
+            
         }
     }
     
@@ -207,8 +226,8 @@ public:
 
             std::pair<int, int> row_col;
 
-            SpVT a = matrices_as_vectors[0] * x(0);
-            typename std::vector<SpVT>::iterator iter;
+            MT a = matrices_as_vectors[0] * x(0);
+            typename std::vector<MT>::iterator iter;
             iter = matrices_as_vectors.begin();
             iter++;
             res.resize(_m, _m); // check if we can avoid it
@@ -220,13 +239,17 @@ public:
             //int row;
 
             tripletList.clear();
-            for (typename SpVT::InnerIterator it(a); it; ++it){
-                //Rcpp::Rcout << " i=" << i_.index() << " value=" << i_.value() << std::endl;
-                row_col = get_position_in_matrix(it.index(), _m);
-                tripletList.push_back(T(row_col.second, row_col.first, it.value())); // get the lower triangular
-                if (complete_mat && row_col.first < row_col.second) // get the upper triangular
+            for (int k=0; k<a.outerSize(); ++k)
+            {
+                for (typename MT::InnerIterator it(a, k); it; ++it)
                 {
-                    tripletList.push_back(T(row_col.first, row_col.second, it.value()));
+                    //Rcpp::Rcout << " i=" << i_.index() << " value=" << i_.value() << std::endl;
+                    row_col = get_position_in_matrix(it.row(), _m);
+                    tripletList.push_back(T(row_col.second, row_col.first, it.value())); // get the lower triangular
+                    if (complete_mat && row_col.first < row_col.second) // get the upper triangular
+                    {
+                        tripletList.push_back(T(row_col.first, row_col.second, it.value()));
+                    }
                 }
             }
             res.setFromTriplets(tripletList.begin(), tripletList.end());
