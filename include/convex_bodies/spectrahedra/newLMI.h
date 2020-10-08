@@ -58,7 +58,7 @@ public:
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT &x, MT& res, bool complete_mat = false)  const {
+    bool evaluateWithoutA0(const VT &x, MT& res, bool complete_mat = false)  const {
         //#define EVALUATE_WITHOUT_A0_NAIVE
         #if defined(EVALUATE_WITHOUT_A0_NAIVE)
             res.setZero(_m, _m);
@@ -103,7 +103,7 @@ public:
                 }
             }
         #endif
-
+        return true;
     }
 
 };
@@ -119,7 +119,7 @@ public:
     typedef Eigen::SparseVector<NT> SpVT;
     //typedef Eigen::SparseVector<NT>::InnerIterator InIterVec;
 
-    MT vectorMatrix;//, a;
+    /*MT vectorMatrix;//, a;
     std::vector<MT> matrices_as_vectors;
     int _m, _d;
 
@@ -144,10 +144,12 @@ public:
         }
 
         return std::pair<int, int> (row, col);
-    }
+    }*/
 
     void setVectorMatrix(int const& m, int const& d, std::vector<MT> &matrices) 
     {
+        return;
+        /*
         _m = m;
         _d = d;
         // allocate memory
@@ -170,7 +172,7 @@ public:
         {
             vectorMatrix.resize(newM, 1); //TODO: check if we can remove this resize()
             tripletList.clear();
-            std::cout<<Eigen::MatrixXd((*iter))<<"\n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter))<<"\n"<<std::endl;
             for (int k=0; k<(*iter).outerSize(); ++k)
             {
                 for (typename MT::InnerIterator it((*iter), k); it; ++it)
@@ -186,7 +188,7 @@ public:
                 }
             }
             vectorMatrix.setFromTriplets(tripletList.begin(), tripletList.end());
-            std::cout<<Eigen::MatrixXd(vectorMatrix)<<"\n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd(vectorMatrix)<<"\n"<<std::endl;
             matrices_as_vectors.push_back(vectorMatrix);
 
             
@@ -205,15 +207,16 @@ public:
                 }
             }*/
             
-        }
+        //}
     }
     
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
-    void evaluateWithoutA0(const VT& x, MT& res, bool complete_mat = false) {
+    bool evaluateWithoutA0(const VT& x, MT& res, bool complete_mat = false) {
+        return false;
         //#define EVALUATE_WITHOUT_A0_NAIVE
-        #if defined(EVALUATE_WITHOUT_A0_NAIVE)
+        /*#if defined(EVALUATE_WITHOUT_A0_NAIVE)
             res.resize(m,m);
             typename std::vector<MT>::iterator it;
 
@@ -234,7 +237,7 @@ public:
             for (int i = 1; i < _d; i++, iter++) {
                 a += (*iter) * x(i);
             }
-
+            std::cout<<"a = "<<Eigen::MatrixXd(a)<<"\n"<<std::endl;
             
             //int row;
 
@@ -253,8 +256,9 @@ public:
                 }
             }
             res.setFromTriplets(tripletList.begin(), tripletList.end());
+            std::cout<<"res = "<<Eigen::MatrixXd(res)<<"\n"<<std::endl;
 
-        #endif
+        #endif*/
 
     }
 
@@ -424,19 +428,46 @@ class LMI {
     /// Evaluate A_0 + \[A_0 + \sum x_i A_i \]
     /// \param[in] x The input vector
     /// \param[out] ret The output matrix
-    void evaluate(VT const & x, MT& ret, bool complete_mat = false) {
-        lmi_evaluator.evaluateWithoutA0(x, ret, complete_mat);
+    void evaluate(VT const & x, MT& ret, bool complete_mat = false) 
+    {
+        if (!lmi_evaluator.evaluateWithoutA0(x, ret, complete_mat)) {
+            //std::cout<<"sparse"<<std::endl;
+            typename std::vector<MT>::iterator it = matrices.begin();// = ;
+            ret = (*it);
+            it++;
+            int i = 0;
+            for ( ; it!=matrices.end(); it++, i++){
+                ret += x.coeff(i) * (*it);
+            }
+            return;
+        }
         //evaluateWithoutA0(x, ret);
 
         // add A0
         ret += matrices[0];
+        
     }
 
     /// Compute  \[x_1*A_1 + ... + x_n A_n]
     /// \param[in] x Input vector
     /// \param[out] res Output matrix
     void evaluateWithoutA0(const VT& x, MT& res, bool complete_mat = false) {
-        lmi_evaluator.evaluateWithoutA0(x, res, complete_mat);
+        if (!lmi_evaluator.evaluateWithoutA0(x, res, complete_mat)) {
+            //std::cout<<"sparse"<<std::endl;
+            typename std::vector<MT>::iterator it = matrices.begin();// = ;
+            //ret = (*it);
+            it++;
+            res = x.coeff(0) * (*it);
+            it++;
+            int i = 1;
+            for ( ; it!=matrices.end(); it++, i++){
+                res += x.coeff(i) * (*it);
+            }
+            //std::cout<<Eigen::MatrixXd(res)<<"\n"<<std::endl;
+            //std::cout<<"non zeros = "<<res.nonZeros()<<std::endl;
+            //std::cout<<Eigen::MatrixXd(res)<<"\n"<<std::endl;
+        }
+        //lmi_evaluator.evaluateWithoutA0(x, res, complete_mat);
         /*
 //#define EVALUATE_WITHOUT_A0_NAIVE
 #if defined(EVALUATE_WITHOUT_A0_NAIVE)
@@ -492,6 +523,7 @@ class LMI {
 
         // i-th coordinate of the determinant is e^T * A_i * e
         for (int i = 0; i < d; i++) {
+            // todo, use iterators
             ret(i) = e.transpose() * (matrices[i+1].template selfadjointView< Eigen::Lower >() * e);
         }
 

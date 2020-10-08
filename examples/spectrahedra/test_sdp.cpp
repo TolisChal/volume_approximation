@@ -110,6 +110,8 @@ int main(const int argc, const char** argv) {
     NT min, average_runtime = 0.0;
     double tstart1, tstop1;
     std::cout << "dimension: " << spectrahedron.getLMI().dimension() <<std::endl;
+    std::cout << "sizeOfMatrices: " << spectrahedron.getLMI().sizeOfMatrices() <<std::endl;
+    
 
     for (int i = 0; i < 5; i++) {
 

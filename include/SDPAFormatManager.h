@@ -294,6 +294,9 @@ void ole(std::ifstream &is, std::vector<SMT> &matrices_sparse, std::vector<DMT> 
         typedef std::string::iterator string_it;
         typedef std::list<NT> listVector;
         SdpaFormatManager<NT> spm;
+
+        typedef Eigen::Triplet<NT> T;
+        std::vector<T> tripletList;
         
         std::string line;
         std::string::size_type sz;
@@ -397,18 +400,37 @@ void ole(std::ifstream &is, std::vector<SMT> &matrices_sparse, std::vector<DMT> 
             } /* for (auto blockSize : blockStructure) */
 
             //the LMI in SDPA format is >0, I want it <0
+            tripletList.clear();
             if (atMatrix == 0) { //F0 has - before it in SDPA format, the rest have +
                 matrices_dense[atMatrix] = matrix;
-                smatrix = matrix.sparseView();
+                for (int i=0; i<matrixDim; i++){
+                    for (int j=0; j<matrixDim; j++){
+                        if (i>=j) {
+                            tripletList.push_back(T(i, j, matrix(i,j)));
+                        }
+                    }
+                }
+                smatrix.resize(matrixDim, matrixDim);
+                smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
                 //smatrix = smatrix.pruned(ref);
                 matrices_sparse[atMatrix] = smatrix.pruned(ref);
-                //std::cout<<Eigen::MatrixXd(smatrix.pruned(ref));
+                std::cout<<Eigen::MatrixXd(smatrix.pruned(ref))<<"\n"<<std::endl;
             }else {
                 matrices_dense[atMatrix] = -1 * matrix;
-                smatrix = (-1.0*matrix).sparseView();
+                for (int i=0; i<matrixDim; i++){
+                    for (int j=0; j<matrixDim; j++){
+                        if (i>=j) {
+                            tripletList.push_back(T(i, j, -matrix(i,j)));
+                        }
+                    }
+                }
+                smatrix.resize(matrixDim, matrixDim);
+                smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+                //smatrix = smatrix.pruned(ref);
+                //smatrix = (-1.0*matrix).sparseView();
                 //smatrix = smatrix.pruned(ref);
                 matrices_sparse[atMatrix] = smatrix.pruned(ref);
-                //std::cout<<Eigen::MatrixXd(smatrix.pruned(ref));
+                std::cout<<Eigen::MatrixXd(smatrix.pruned(ref))<<"\n"<<std::endl;
             }
         }
 
