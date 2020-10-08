@@ -36,16 +36,20 @@ typedef Cartesian <NT> Kernel;
 typedef typename Kernel::Point Point;
 typedef Spectrahedron <NT, DMT, VT> DSPECTRAHEDRON;
 typedef Spectrahedron <NT, MT, VT> SPECTRAHEDRON;
+typedef LMI <NT, MT, VT> lmi;
 //typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
 //typedef BoltzmannHMCWalk::Walk<Spectrahedron, RNGType > HMC1;
 //typedef BoltzmannHMCOptWalk::Walk<Spectrahedron, RNGType > HMC2;
 
 
+
+
+
 int main(const int argc, const char** argv) {
 
     SPECTRAHEDRON spectrahedron;
-    Point objFunction;
-    bool correct, verbose = false, best_on_traj = true;
+    Point objFunction, p;
+    bool correct, verbose = false, best_on_traj = true, set_p = false;
     NT optimal_val;
     NT rel_error = 0.001, k=0.5;
 
@@ -59,7 +63,41 @@ int main(const int argc, const char** argv) {
             std::ifstream in;
             in.open(argv[++i], std::ifstream::in);
             //SdpaFormatManager<NT> sdpaFormatManager;
-            loadSDPASparseFormatFile<DMT>(in, spectrahedron, objFunction);
+            lmi Slmi;
+            VT q;
+            loadSparseSDPAFormatFile<MT, NT>(in, Slmi, q);
+            objFunction = Point(q);
+            spectrahedron = SPECTRAHEDRON(Slmi);
+            correct = true;
+        }
+
+        if(!strcmp(argv[i],"-inner_point")){
+
+            std::cout<<"Reading inner point from file..."<<std::endl;
+
+            std::ifstream inpF;
+            inpF.open(argv[++i], std::ifstream::in);
+
+            // read point
+            std::string line;
+            std::getline(inpF, line, '\n');
+
+            std::vector<double> vec = readVector3(line);
+            int n = vec.size();
+            VT point(n);
+            for (int i = 0 ; i<n; ++i)
+                point(i) = vec[i];
+
+            p = Point(point);
+            set_p = true;
+
+            //std::cout<<"p = "<<point<<std::endl;
+            
+            
+            //std::ifstream in;
+            //in.open(argv[++i], std::ifstream::in);
+            //SdpaFormatManager<NT> sdpaFormatManager;
+            //sdpaFormatManager.loadSDPAFormatFile(in, spectrahedron, objFunction);
             correct = true;
         }
 
@@ -98,7 +136,8 @@ int main(const int argc, const char** argv) {
 
     // We will need an initial interior point. In this
     // spectrahedron the origin (zero point) is interior
-    Point initialPoint(spectrahedron.getLMI().dimension());
+    if (!set_p) p = Point(spectrahedron.getLMI().dimension());
+    //Point initialPoint(spectrahedron.getLMI().dimension());
 
     // First some parameters for the solver
     // desired relative error
@@ -120,7 +159,7 @@ int main(const int argc, const char** argv) {
         //initializations
         SPECTRAHEDRON spectrahedron_temp = spectrahedron;
         SimulatedAnnealingSettings<Point> settings_temp = settings;
-        Point initialPoint_temp(spectrahedron.getLMI().dimension()), sol_temp(spectrahedron.getLMI().dimension());
+        Point initialPoint_temp(p.getCoefficients()), sol_temp(spectrahedron.getLMI().dimension());
 
         tstart1 = (double)clock()/(double)CLOCKS_PER_SEC;
         min = solve_sdp_with_optimal<BoltzmannHMCWalk>(spectrahedron_temp, objFunction, settings_temp, 

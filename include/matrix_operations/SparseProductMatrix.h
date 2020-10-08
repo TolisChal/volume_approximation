@@ -14,7 +14,7 @@
 #define NDEBUG
 #endif /* NDEBUG */
 
-#define CHOLESKY_DECOMPOSITION
+#define NO_CHOLESKY_DECOMPOSITION
 //#define SPARSE_CHOLESKY_DECOMPOSITION
 
 /// A wrapper class for dense Eigen matrices in Spectra and ARPACK++
