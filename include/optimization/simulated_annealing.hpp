@@ -175,7 +175,9 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
 
     // Estimate the diameter of the spectrahedron
     // needed for the random walk and for the simulated annealing algorithm
+    std::cout << "diameter to compute"<<std::endl;
     NT diameter = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+    std::cout << "diameter = "<<diameter<<std::endl;
 
     /******** initialization *********/
     solution = interiorPoint;

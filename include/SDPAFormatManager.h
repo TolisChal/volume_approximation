@@ -534,17 +534,17 @@ void loadSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFunction
     int current_mat = 0;
     while (!std::getline(is, line, '\n').eof()) {
         std::vector<NT> t = readVector3(line);
-        //std::cout<<"t = "<<std::endl;
-        //for (int k = 0; k<5; k++){
-        //    std::cout<<t[k]<<" ";
-        //}
-        //std::cout<<"\n";
-        //std::cout<<"current_mat = "<<current_mat<<std::endl;
+        std::cout<<"t = "<<std::endl;
+        for (int k = 0; k<5; k++){
+            std::cout<<t[k]<<" ";
+        }
+        std::cout<<"\n";
+        std::cout<<"current_mat = "<<current_mat<<std::endl;
         if (t[0] > current_mat) {
             smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
             //smatrix = smatrix.pruned(ref);
             matrices[t[0] - 1] = smatrix;
-            //std::cout<<"number of matrix = "<<t[0]<<std::endl;
+            std::cout<<"number of matrix = "<<t[0]<<std::endl;
             //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
             tripletList.clear();
             smatrix.resize(matrixDim, matrixDim);
@@ -574,10 +574,12 @@ void loadSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFunction
         //if (i!=j)
         //    matrices[t[0]](j,i) = t[4];
     }
+    std::cout<<"current_mat = "<<current_mat<<std::endl;
     smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    std::cout<<"variablesNum = "<<variablesNum<<std::endl;
             //smatrix = smatrix.pruned(ref);
     matrices[variablesNum] = smatrix;
-    //std::cout<<"number of matrix = "<<variablesNum<<std::endl;
+    
     //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
 
 
@@ -589,6 +591,7 @@ void loadSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFunction
     // return lmi and objective function
     objectiveFunction.setZero(variablesNum);
     int at = 0;
+    std::cout<<"constantVector.size() = "<<constantVector.size()<<std::endl;
 
     for (auto value : constantVector)
         objectiveFunction(at++) = value;

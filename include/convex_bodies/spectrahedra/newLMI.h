@@ -382,6 +382,10 @@ class LMI {
         lmi_evaluator.setVectorMatrix(m, d, matrices);
     }
 
+    void add_matrix(MT const& A) {
+        matrices.push_back(A);
+        d += 1;
+    }
 
     /// Create the vectorMatrix, which has at each column the distinct elements of each A_i, i=1,...,d
     //void setVectorMatrix() {

@@ -7,8 +7,8 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_EIGENVALUESPROBLEMS_H
-#define VOLESTI_EIGENVALUESPROBLEMS_H
+#ifndef VOLESTI_SPARSEEIGENVALUESPROBLEMS_H
+#define VOLESTI_SPARSEEIGENVALUESPROBLEMS_H
 
 /// Uncomment the solver the function minPosGeneralizedEigenvalue uses
 /// Eigen solver for generalized eigenvalue problem
@@ -17,10 +17,12 @@
 //#define SPECTRA_EIGENVALUES_SOLVER
 /// ARPACK++ standard eigenvalues solver
 #define ARPACK_EIGENVALUES_SOLVER
+#define TOL 1e-04
 
 #include <../../external/arpack++/include/arssym.h>
 #include <../../external/Spectra/include/Spectra/SymEigsSolver.h>
 #include "SparseProductMatrix.h"
+#include "SparseSymGenProdMatrix.h"
 #include "EigenSparseMatrix.h"
 
 #include "../../external/Spectra/include/Spectra/MatOp/SparseCholesky.h"
@@ -128,6 +130,72 @@ public:
     NTpair symGeneralizedProblem(MT const & A, MT const & B) {
 
         int matrixDim = A.rows();
+        double lambdaMinPositive, lambdaMaxNegative;
+
+        #if defined(ARPACK_EIGENVALUES_SOLVER)
+
+        MT _B = -1.0 * B;
+        SparseSymGenProdMatrix<NT> _M(&_B, &A);
+
+        // Creating an eigenvalue problem and defining what we need:
+        // the  eigenvector of A with largest real.
+        ARNonSymStdEig<NT, SparseSymGenProdMatrix<NT> >
+        dprob(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+
+        if (dprob.FindEigenvectors() == 0) {
+            
+            std::cout<<"lambdaMinPositive failed"<<std::endl;
+            dprob.ChangeNcv(12);
+            dprob.ChangeMaxit(2*dprob.GetMaxit());
+            //dprob.ChangeTol(tol_*0.1);
+            if (dprob.FindEigenvectors() == 0) {
+                std::cout << "\tlambdaMinPositive Failed Again\n";
+            } else {
+                lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+                //std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+            }
+            // if failed to find eigenvalues
+            //return {0.0, 0.0};
+        } else {
+            lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+        }
+
+        // retrieve eigenvalue of the original system
+        
+ 
+        ARNonSymStdEig<NT, SparseSymGenProdMatrix<NT> >
+        dprob2(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("SR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+
+        //if (!dprob2.EigenvaluesFound()) {
+            // if failed to find eigenvalues
+            //return {0.0, 0.0};
+        //}
+
+        if (dprob2.FindEigenvectors() == 0) {
+            
+            std::cout<<"lambdaMaxNegative failed"<<std::endl;
+            dprob2.ChangeNcv(12);
+            dprob2.ChangeMaxit(2*dprob2.GetMaxit());
+            //dprob.ChangeTol(tol_*0.1);
+            if (dprob2.EigenvaluesFound() == 0) {
+                std::cout << "\n lambdaMaxNegative Failed Again\n";
+                //std::cout<<"lambdaMaxNegative = "<<lambdaMaxNegative<<std::endl;
+            } else {
+                lambdaMaxNegative = 1.0 / dprob2.EigenvalueReal(0);
+            }
+            // if failed to find eigenvalues
+            //return {0.0, 0.0};
+        } else {
+            lambdaMaxNegative = 1.0 / dprob2.EigenvalueReal(0);
+        }
+        
+
+        //std::cout<<"[1] lambdaMinPositive = "<<lambdaMinPositive<<", lambdaMaxNegative = "<<lambdaMaxNegative<<std::endl;
+
+        //return {lambdaMinPositive, lambdaMaxNegative};
+
+        #else
+
 
         // Spectra solves Xv=lYv, where Y positive definite
         // Set X = B, Y=-A. Then, the eigenvalues we want are the minimum negative
@@ -151,13 +219,15 @@ public:
             return {NT(0), NT(0)};
 
         Eigen::VectorXd evalues;
-        double lambdaMinPositive, lambdaMaxNegative;
+       
 
         evalues = geigs.eigenvalues();
 
         // get the eigenvalues of the original problem
         lambdaMinPositive = 1 / evalues(0);
         lambdaMaxNegative = 1 / evalues(1);
+
+        #endif
 
         return {lambdaMinPositive, lambdaMaxNegative};
     }

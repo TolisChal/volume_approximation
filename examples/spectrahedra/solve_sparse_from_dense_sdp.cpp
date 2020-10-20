@@ -24,6 +24,7 @@
 #include "SDPAFormatManager.h"
 #include "optimization/simulated_annealing.hpp"
 #include "random_walks/boltzmann_hmc_walk.hpp"
+#include "compute_initial_point.hpp"
 //#include "random_walks/boltzmann_hmc_opt_walk.hpp"
 //#include "random_walks/boltzmann_hmc_full_opt_walk.hpp"
 
@@ -52,6 +53,8 @@ int main(const int argc, const char** argv) {
     bool correct, verbose = false, best_on_traj = true, set_p = false;
     NT optimal_val;
     NT rel_error = 0.001, k=0.5;
+    lmi Slmi;
+
 
     for(int i=1; i<argc; ++i){
 
@@ -63,9 +66,9 @@ int main(const int argc, const char** argv) {
             std::ifstream in;
             in.open(argv[++i], std::ifstream::in);
             //SdpaFormatManager<NT> sdpaFormatManager;
-            lmi Slmi;
             VT q;
             loadSparseSDPAFormatFile<MT, NT>(in, Slmi, q);
+            std::cout<<"file ok..."<<std::endl;
             objFunction = Point(q);
             spectrahedron = SPECTRAHEDRON(Slmi);
             correct = true;
@@ -136,7 +139,9 @@ int main(const int argc, const char** argv) {
 
     // We will need an initial interior point. In this
     // spectrahedron the origin (zero point) is interior
-    if (!set_p) p = Point(spectrahedron.getLMI().dimension());
+    if (!set_p){
+        get_inner_point<NT, MT, SPECTRAHEDRON>(Slmi, p, objFunction);
+    }
     //Point initialPoint(spectrahedron.getLMI().dimension());
 
     // First some parameters for the solver
