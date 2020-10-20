@@ -567,7 +567,7 @@ class LMI {
     /// evaluate LMI(pos) and check if its negative semidefinite
     /// \param pos a vector of our current position
     /// \return true is LMI(pos) is negative semidefinite
-    bool isNegativeSemidefinite(VT const & pos) const {
+    bool isNegativeSemidefinite(VT &pos) {
         MT mat;
         evaluate(pos, mat);
         return isNegativeSemidefinite(mat);

@@ -42,7 +42,7 @@ public:
 #if defined(PARTIAL_LU_DECOMPOSITION)
     //typedef Eigen::PartialPivLU<MT> Decomposition;
     //typedef Eigen::SimplicialLDLT<MT, Eigen::Lower> Decomposition;
-    typedef SparseLU<MT, COLAMDOrdering<int> > Decomposition;
+    typedef Eigen::SparseLU<MT, Eigen::COLAMDOrdering<int> > Decomposition;
 #else
     typedef Eigen::FullPivLU<MT> Decomposition;
 #endif

@@ -20,7 +20,7 @@
 //#define CONSTANT_1 20
 
 
-template<typename NT, typename MT, typename Spectra, typename LMI, typename Point>
+template<typename NT, typename MT, typename VT, typename Spectra, typename LMI, typename Point>
 void get_inner_point(LMI lmi, Point &p, Point const& obj) {
 
     int m = lmi.sizeOfMatrices();
@@ -40,28 +40,34 @@ void get_inner_point(LMI lmi, Point &p, Point const& obj) {
     int d = lmi.dimension();
 
     Spectra spectrahedro(lmi);
-    SimulatedAnnealingSettings<Point> settings(0.01, 1, -1, 0.25);
+    SimulatedAnnealingSettings<Point> settings(0.1, 1, -1, 0.25);
 
     Point q(d), sol(d), objectii(d);
     objectii.set_coord(d-1, -1.0);
 
     Eigen::SelfAdjointEigenSolver<MT> solver;
-    solver.compute(-lmi.getMatrices()[0], Eigen::EigenvaluesOnly);
-    NT lambda = solver.eigenvalues().minCoeff();
+    solver.compute(lmi.getMatrices()[0], Eigen::EigenvaluesOnly);
+    NT lambda = -solver.eigenvalues().maxCoeff();
     std::cout << "hi4"<<std::endl;
-    lambda *= 2.0;
+    lambda *= 1.05;
+    std::cout << "lambda = "<<lambda<<std::endl;
     q.set_coord(d-1, lambda);
-    //std::cout << "is exterior = "<<spectrahedro.isExterior(q.getCoefficients())<<std::endl;
+    VT qq = q.getCoefficients();
+    std::cout << "isNegativeSemidefinite = "<<lmi.isNegativeSemidefinite(qq)<<std::endl;
+    //exit(-1);
     //sol = q;
 
     solve_for_initial_point(spectrahedro, objectii, settings, q, sol, true);
     p = sol;
-
+    //qq = p.getCoefficients();
+    //std::cout << "isNegativeSemidefinite = "<<lmi.isNegativeSemidefinite(qq)<<std::endl;
+    //exit(-1);
 }
 
 
 template <typename _Spectrahedron, typename Point, typename _Settings>
-double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & objectiveFunction, _Settings const & settings,
+double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & objectiveFunction,
+         _Settings const & settings,
          Point const & interiorPoint, Point& solution, bool verbose = false) {
 
     // fetch the data types we will use
@@ -156,7 +162,7 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
                       << ", Relative error: " << relError << "\n";
 
         // check if we reached desired accuracy
-        if (relError < settings.error)
+        if (currentMin < 0.0)
             break;
 
         // decrease the temperature

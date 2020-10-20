@@ -140,7 +140,10 @@ int main(const int argc, const char** argv) {
     // We will need an initial interior point. In this
     // spectrahedron the origin (zero point) is interior
     if (!set_p){
-        get_inner_point<NT, MT, SPECTRAHEDRON>(Slmi, p, objFunction);
+        get_inner_point<NT, MT, VT, SPECTRAHEDRON>(Slmi, p, objFunction);
+        VT qq = p.getCoefficients();
+        std::cout << "Point in spectra, isNegativeSemidefinite = "<<Slmi.isNegativeSemidefinite(qq)<<std::endl;
+        //exit(-1);
     }
     //Point initialPoint(spectrahedron.getLMI().dimension());
 
