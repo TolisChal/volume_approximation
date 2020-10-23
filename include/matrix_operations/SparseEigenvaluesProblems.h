@@ -127,6 +127,54 @@ public:
     /// \param[in] A Input matrix
     /// \param[in] B Input matrix
     /// \return The pair (minimum positive, maximum negative) of eigenvalues
+    NT minPosLinearEigenvalue(MT const & A, MT const & B, VT &eigvec) 
+    {
+        int matrixDim = A.rows();
+        double lambdaMinPositive;
+
+        MT _B = -1.0 * B;
+        SparseSymGenProdMatrix<NT> _M(&_B, &A);
+        
+        std::cout<<"calling arpack"<<std::endl; 
+        // Creating an eigenvalue problem and defining what we need:
+        // the  eigenvector of A with largest real.
+        ARNonSymStdEig<NT, SparseSymGenProdMatrix<NT> >
+        dprob(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+
+        if (dprob.FindEigenvectors() == 0) {
+            
+            std::cout<<"lambdaMinPositive failed"<<std::endl;
+            dprob.ChangeNcv(12);
+            dprob.ChangeMaxit(2*dprob.GetMaxit());
+            //dprob.ChangeTol(tol_*0.1);
+            if (dprob.FindEigenvectors() == 0) {
+                std::cout << "\tlambdaMinPositive Failed Again\n";
+            } else {
+                std::cout<<"lambdaMinPositive computed"<<std::endl;
+                lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+                for (int i=0 ; i < matrixDim; i++) {
+                    eigvec(i) = dprob.EigenvectorReal(0, i);
+                }
+                //std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+            }
+            // if failed to find eigenvalues
+            //return {0.0, 0.0};
+        } else {
+            std::cout<<"lambdaMinPositive computed"<<std::endl;
+            lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+            for (int i=0 ; i < matrixDim; i++) {
+                eigvec(i) = dprob.EigenvectorReal(0, i);
+            }
+        }
+        std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+        return lambdaMinPositive;
+    }
+
+    /// Find the minimum positive and maximum negative eigenvalues of the generalized eigenvalue
+    /// problem A + lB, where A, B symmetric and A negative definite.
+    /// \param[in] A Input matrix
+    /// \param[in] B Input matrix
+    /// \return The pair (minimum positive, maximum negative) of eigenvalues
     NTpair symGeneralizedProblem(MT const & A, MT const & B) {
 
         int matrixDim = A.rows();

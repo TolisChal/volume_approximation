@@ -168,6 +168,28 @@ public:
         lmi.evaluateWithoutA0(b, precomputedValues.B);
     }
 
+    /// Construct the quadratic eigenvalue problem \[At^2 + Bt + C \] for positive_intersect.
+    /// A = lmi(c) - A0, B = lmi(b) - A0 and C = lmi(c).
+    /// \param[in] a Input vector
+    /// \param[in] b Input vector
+    /// \param[in] c Input vector
+    /// \param[in, out] precomputedValues Holds matrices A, C
+    void createMatricesForPositiveIntersection(const VT& p, const VT& v,
+            PrecomputedValues2& precomputedValues) {
+        // check if matrices A, C are ready
+        // if not compute them
+        if (!precomputedValues.computed_C) {
+            lmi.evaluate(p, precomputedValues.C);
+        }
+
+        //if (!precomputedValues.computed_C) {
+        //    lmi.evaluate(c, precomputedValues.C);
+        //}
+
+        // compute Matrix B
+        lmi.evaluateWithoutA0(v, precomputedValues.B);
+    }
+
     /// Computes the distance d we must travel on the parametrized polynomial curve \[at^2 + bt + c \],
     /// assuming we start at t=0, and we start increasing t.
     /// We construct the quadratic eigenvalue problem \[At^2 + Bt + C \],
@@ -179,8 +201,9 @@ public:
     /// \param[in] c Input Vector, the constant term
     /// \param[in, out] precomputedValues Data we move between successive method calls
     /// \returns The distance d
-    NT positiveIntersection(VT const & a, VT const & b, VT const & c, PrecomputedValues2& precomputedValues) {
-                            unsigned int matrixDim = lmi.sizeOfMatrices();
+    NT positiveIntersection(VT const & a, VT const & b, VT const & c, PrecomputedValues2& precomputedValues) 
+    {
+        //unsigned int matrixDim = lmi.sizeOfMatrices();
 
         // create matrices A, B, C
         createMatricesForPositiveIntersection(a, b, c, precomputedValues);
@@ -195,6 +218,29 @@ public:
         NT distance = quadraticEigenvaluesProblem.minPosQuadraticEigenvalue(precomputedValues.A, precomputedValues.B,
                                                                             precomputedValues.C,
                                                                             precomputedValues.eigenvector);
+
+        return distance;
+    }
+
+    NT positiveIntersection(VT const & p, VT const & v, PrecomputedValues2& precomputedValues) 
+    {
+        //unsigned int matrixDim = lmi.sizeOfMatrices();
+
+        // create matrices A, B, C
+        createMatricesForPositiveIntersection(p, v, precomputedValues);
+        std::cout<<"matrices created"<<std::endl;
+
+        // get the minimum positive eigenvalue of At^2 + Bt + C
+        
+        #if defined(SPARSE_PROBLEM)
+            SparseEigenvaluesProblems<NT, MT, VT> EigenvaluesProblem;
+        #elif defined(DENSE_PROBLEM)
+            EigenvaluesProblems<NT, MT, VT> EigenvaluesProblem;
+        #endif
+        std::cout<<"computing eigenvalue..."<<std::endl;
+        NT distance = EigenvaluesProblem.minPosLinearEigenvalue(precomputedValues.C, precomputedValues.B,
+                                                                            precomputedValues.eigenvector);
+        std::cout<<"distance = "<<distance<<std::endl;
 
         return distance;
     }
@@ -253,66 +299,7 @@ public:
         return lmi;
     }
 
-    /// Estimates the diameter of the spectrahedron. It samples points uniformly with coordinate directions
-    /// hit and run, and returns the maximum distance between them.
-    /// \tparam Point
-    /// \param[in] numPoints The number of points to sample for the estimation
-    /// \return An estimation of the diameter of the spectrahedron
-    template<class Point>
-    NT estimateDiameterBilliard(int const numPoints, Point const & interiorPoint) {
-        typedef boost::mt19937 RNGType;
-
-        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-        RNGType rng(seed);
-
-        std::list<Point> randPoints;
-
-        // initialize random numbers generators
-        boost::random::uniform_real_distribution<> urdist(0, 1);
-        boost::random::uniform_int_distribution<> uidist(1, d);
-
-        PrecomputedValues2 precomputedValues;
-        precomputedValues.set_mat_size(getLMI().sizeOfMatrices());
-        VT p = interiorPoint.getCoefficients();
-
-        // sample points with walk length set to 1
-        for (int samplingNo=0 ; samplingNo<numPoints ; ++samplingNo) {
-            // uniformly select a line parallel to an axis,
-            // i.e. an indicator i s.t. x_i = 1
-            int coordinate = uidist(rng);
-
-            // get the distances we can travel from p
-            // on the line p + t* e_coordinate
-            // before reaching the boundary
-            std::pair<NT, NT> distances = this->coordinateIntersection(p, coordinate, precomputedValues);
-
-            // uniformly set the new point on the segment
-            // defined by the intersection points
-            NT lambda = urdist(rng);
-            NT diff = distances.first + lambda * (distances.second - distances.first);
-
-            p(coordinate - 1) = p(coordinate - 1) + diff;
-
-            // update the precomputedValues, so we can skip
-            // computations in the next call
-            precomputedValues.computed_A = true;
-            precomputedValues.A += diff * *(this->getLMI().getMatrix(coordinate));
-            randPoints.push_back(Point(p));
-        }
-
-        // find maximum distance among points;
-        NT maxDistance = 0;
-        typename std::list<Point>::iterator itInner, itOuter = randPoints.begin();
-
-        for (; itOuter!=randPoints.end() ; ++itOuter)
-            for (itInner=itOuter ; itInner!=randPoints.end() ; ++itInner) {
-                NT current = itOuter->distance(*itInner);
-                if (current > maxDistance)
-                    maxDistance = current;
-            }
-
-        return maxDistance;
-    }
+    
 
     /// Estimates the diameter of the spectrahedron. It samples points uniformly with coordinate directions
     /// hit and run, and returns the maximum distance between them.

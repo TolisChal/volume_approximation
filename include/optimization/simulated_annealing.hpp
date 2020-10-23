@@ -14,6 +14,47 @@
 
 #include "optimization/sliding_window.hpp"
 #include "random_walks/boltzmann_hmc_walk.hpp"
+#include "random_walks/uniform_billiard_sdp.hpp"
+
+
+/// Estimates the diameter of the spectrahedron. It samples points uniformly with coordinate directions
+/// hit and run, and returns the maximum distance between them.
+/// \tparam Point
+/// \param[in] numPoints The number of points to sample for the estimation
+/// \return An estimation of the diameter of the spectrahedron
+template<typename MT, typename WalkType, typename NT, class RNGType, class Spectra, class Point>
+NT estimateDiameterBilliard(Spectra &spectrahedron, int const numPoints, Point const & interiorPoint) 
+{
+    typedef typename WalkType::template Walk<Spectra, RNGType > BiW;
+
+    RNGType rng(spectrahedron.dimension());
+    typename BiW::Settings biw_settings(1, rng);
+    BiW biwRandomWalk(biw_settings);
+
+    // this data structure help us move computations between function calls
+    PrecomputedValues<MT> biwPrecomputedValues;
+    biwPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
+    std::list<Point> randPoints;
+
+    std::cout<<"Hi1"<<std::endl;
+    biwRandomWalk.apply(spectrahedron, interiorPoint, numPoints, randPoints, biwPrecomputedValues);
+    std::cout<<"Hi2"<<std::endl;
+        
+    // find maximum distance among points;
+    NT maxDistance = 0;
+    typename std::list<Point>::iterator itInner, itOuter = randPoints.begin();
+
+    for (; itOuter!=randPoints.end() ; ++itOuter) {
+        for (itInner=itOuter ; itInner!=randPoints.end() ; ++itInner) {
+            NT current = itOuter->distance(*itInner);
+            if (current > maxDistance) {
+                maxDistance = current;
+            }
+        }
+    }
+
+    return maxDistance;
+}
 
 
 /// A magic number!
@@ -176,8 +217,9 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     // Estimate the diameter of the spectrahedron
     // needed for the random walk and for the simulated annealing algorithm
     std::cout << "diameter to compute"<<std::endl;
-    NT diameter = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+    NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(spectrahedron, CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     std::cout << "diameter = "<<diameter<<std::endl;
+    exit(-1);
 
     /******** initialization *********/
     solution = interiorPoint;

@@ -7,8 +7,8 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_BOLTZMANN_HMC_WALK_HPP
-#define VOLESTI_BOLTZMANN_HMC_WALK_HPP
+#ifndef VOLESTI_UNIFORM_BILLIARD_SDP_HPP
+#define VOLESTI_UNIFORM_BILLIARD_SDP_HPP
 
 #include "spectrahedron.h"
 #include "generators/boost_random_number_generator.hpp"
@@ -38,7 +38,7 @@ bool stopping_criterion_is_true(VT const& p, VT const& v, NT const& lambda, VT c
 }
 
 /// The Hamiltonian Monte Carlo random walk, to sample from the Boltzmann distribution, i.e. e^(-c*x/T).
-struct BoltzmannHMCWalk {
+struct BilliardWalkSDP {
 public:
 
     struct parameters {};
@@ -94,7 +94,7 @@ public:
             /// \param[in] reflectionsBound at each iteration allow reflectionsBound*dimension reflections at most
             /// \param[in] dl approach the boundary with a factor of dl, for numerical stability
             /// \return An instance of this struct
-            template <typename Point>
+            //template <typename Point>
             Settings(const int walkLength, const RandomNumberGenerator &randomNumberGenerator,
                      unsigned int reflectionsBound = 10, NT dl = 0.995) : walk_length(walkLength), 
                                                                           randomNumberGenerator(randomNumberGenerator),
@@ -220,7 +220,7 @@ public:
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
-                NT lambda = spectrahedron.positiveIntersection(v, p, precomputedValues);
+                NT lambda = spectrahedron.positiveIntersection(p, v, precomputedValues);
                 lambda *= dl;
                 t_temp = rng.sample_urdist() * lambda;
                 w1 = T / (T + lambda);
@@ -286,6 +286,7 @@ public:
             // if the #reflections exceeded the limit, don't move
             if (reflectionsNum == reflectionsNumBound) {
                 p = xi + ti*vi;
+                precomputedValues.C = Ci;
             }
         }
 
@@ -339,7 +340,7 @@ public:
             /// \param[in] reflectionsBound at each iteration allow reflectionsBound*dimension reflections at most
             /// \param[in] dl approach the boundary with a factor of dl, for numerical stability
             /// \return An instance of this struct
-            template <typename Point>
+            //template <typename Point>
             Settings(const int walkLength, const RandomNumberGenerator &randomNumberGenerator,
                      unsigned int reflectionsBound = 10, NT dl = 0.995) : walk_length(walkLength), 
                                                                           randomNumberGenerator(randomNumberGenerator),
@@ -407,11 +408,12 @@ public:
             // of the class spectrahedron, to avoid repeating computations
 
             VT p = interiorPoint.getCoefficients();
-
+            std::cout<<"walk_length = "<<settings.walk_length<<std::endl;
             // sample #pointsNum points
             for (unsigned int i = 1; i <= pointsNum; ++i) {
                 // burn #walk_length points to get one sample
                 for (unsigned int j = 0; j < settings.walk_length; ++j) {
+                    std::cout<<"Hi0.5"<<std::endl;
                     getNextPoint<Point>(spectrahedron, p, precomputedValues);
                 }
 
@@ -458,6 +460,7 @@ public:
             // The vector v will be a random a direction
             VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
             VT v0 = v;
+            std::cout<<"Hi3"<<std::endl;
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound
@@ -465,12 +468,16 @@ public:
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
-                NT lambda = spectrahedron.positiveIntersection(a, v, p, precomputedValues);
+                std::cout<<"computing oracle boundary"<<std::endl;
+                NT lambda = spectrahedron.positiveIntersection(p, v, precomputedValues);
+                std::cout<<"lambda = "<<lambda<<std::endl;
                 lambda *= dl;
                 t_temp = rng.sample_urdist() * lambda;
                 w1 = T / (T + lambda);
                 w2 = lambda / (T + lambda);
+                std::cout<<"w2 = "<<w2<<std::endl;
                 u = rng.sample_urdist();
+                std::cout<<"u = "<<u<<std::endl;
                 if (u <= w2) {
                     ti = t_temp;
                     xi = p;
@@ -494,6 +501,7 @@ public:
 
                 // if we can walk the remaining distance without reaching he boundary
                 if (stopping_criterion_is_true(p, v, lambda, p0, v0)) {
+                    std::cout<<"stopping reached"<<std::endl;
                     // set the new point p:= (T^2)*a + T*V + p
                     p = xi + ti * vi;
 
@@ -528,7 +536,8 @@ public:
 
             // if the #reflections exceeded the limit, don't move
             if (reflectionsNum == reflectionsNumBound){
-                p = pi + ti * vi;
+                p = xi + ti * vi;
+                precomputedValues.C = Ci;
             }
         }
 
