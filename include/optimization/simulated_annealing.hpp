@@ -217,12 +217,26 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     // Estimate the diameter of the spectrahedron
     // needed for the random walk and for the simulated annealing algorithm
     std::cout << "diameter to compute"<<std::endl;
-    NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(spectrahedron, CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
-    std::cout << "diameter = "<<diameter<<std::endl;
-    exit(-1);
+    //NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(spectrahedron, CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+    //std::cout << "diameter = "<<diameter<<std::endl;
+    //std::cout << "diaminteriorPointeter = "<<interiorPoint.getCoefficients().transpose()<<std::endl;
+    //NT diameter2 = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+    //std::cout << "diameter2 = "<<diameter2<<std::endl;
+    RNGType rng2(spectrahedron.dimension());
+    //std::cout << "Hi"<<std::endl;
+    VT best_point(spectrahedron.dimension());
+    NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
+                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point);
+    //interiorPoint = Point(best_point);
+    std::cout << "final diameter = "<<diameter<<std::endl;
+    std::cout<<"is p Exterior = "<<spectrahedron.isExterior(best_point)<<std::endl;
+    if (spectrahedron.isExterior(best_point)==1){
+        std::cout<<"is p Exterior = "<<spectrahedron.isExterior(best_point)<<std::endl;
+        exit(-1);
+    }
 
     /******** initialization *********/
-    solution = interiorPoint;
+    solution = Point(best_point);
     // the minimum till last iteration
     NT currentMin = objectiveFunction.dot(solution);
     int stepsCount = 0;
@@ -242,7 +256,12 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     hmcPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
 
     NT previous_min = objectiveFunction.dot(solution);
-
+    std::cout << "Step: " << stepsCount << ", Temperature: " << temperature << ", Min: " << currentMin
+                      << ", Relative error: " << std::abs(currentMin - optimal_val) / std::abs(optimal_val)
+                      << ", optimal_val: " << optimal_val<< ", settings.error: " << settings.error<< "\n";
+    temperature = 600.0;
+    Point temp_point(spectrahedron.dimension());
+    bool improved;
     /******** solve *********/
     // if settings.maxNumSteps is negative there is no
     // bound to the number of steps - stop
@@ -267,9 +286,15 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
             }
             else {
                 // update values;
-                solution = randPoints.back();
+                temp_point = randPoints.back();
                 randPoints.clear();
-                //hmcPrecomputedValues.resetFlags();
+                if (objectiveFunction.dot(temp_point) < currentMin) {
+                    solution = temp_point; 
+                    improved = true;
+                } else {
+                    hmcPrecomputedValues.resetFlags();
+                    improved = false;
+                }
                 break;
             }
         }

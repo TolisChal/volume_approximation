@@ -24,7 +24,7 @@ bool stopping_criterion_is_true(VT const& p, VT const& v, NT const& lambda, VT c
         if ((t1 < t2)) 
         {
             return false;
-        } else if (t1 > lambda && t2 > lambda) {
+        } else if (t2 > lambda) {
             return false;
         } else if (t1 < 0.0) {
             return false;
@@ -199,9 +199,13 @@ public:
             VT previousPoint;
             VT p0 = p, xi, vi;
             MT Ci;
+            std::cout<<"Hi30"<<std::endl;
+            std::cout<<"p0 = "<<p0.transpose()<<std::endl;
+            std::cout<<"is p0 Exterior = "<<spectrahedron.isExterior(p0)<<std::endl;
+            std::cout<<"Hi32"<<std::endl;
 
             // choose a distance to walk
-            NT T = 0.0, ti, w1, w2, t_temp, u;
+            NT T = 0.0, ti, w2, w1, u, t_temp;
 
             // The trajectory will be of the form a*t^2 + vt + p
             // where a = -c / 2*temperature
@@ -213,19 +217,33 @@ public:
             // The vector v will be a random a direction
             VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
             VT v0 = v;
+            std::cout<<"Hi3"<<std::endl;
+            precomputedValues.computed_C = false;
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound
-            while (reflectionsNum++ < reflectionsNumBound) {
+            while (reflectionsNum < reflectionsNumBound) {
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
+                std::cout<<"is p Exterior = "<<spectrahedron.isExterior(p)<<std::endl;
+                std::cout<<"p = "<<p.transpose()<<std::endl;
+                std::cout<<"computing oracle boundary"<<std::endl;
                 NT lambda = spectrahedron.positiveIntersection(p, v, precomputedValues);
+                if (lambda <=0){
+                    std::cout<<"lambda = "<<lambda<<std::endl;
+                    exit(-1);
+                }
+                std::cout<<"lambda = "<<lambda<<std::endl;
                 lambda *= dl;
+                VT qq = p + lambda * v;
+                std::cout<<"is pi + tvi Exterior = "<<spectrahedron.isExterior(qq)<<std::endl;
                 t_temp = rng.sample_urdist() * lambda;
-                w1 = T / (T + lambda);
+                //w1 = T / (T + lambda);
                 w2 = lambda / (T + lambda);
+                std::cout<<"w2 = "<<w2<<std::endl;
                 u = rng.sample_urdist();
+                std::cout<<"u = "<<u<<std::endl;
                 if (u <= w2) {
                     ti = t_temp;
                     xi = p;
@@ -233,8 +251,6 @@ public:
                     Ci = precomputedValues.C;
                 }
                 T += lambda;
-
-
 
                 // We just solved a quadratic polynomial eigenvalue system At^2 + Bt + C,
                 // where A = lmi(a) - A0, B = lmi(v) - A0 and C = lmi(p)
@@ -250,14 +266,14 @@ public:
                 //precomputedValues.computed_XY = true;
 
                 // if we can walk the remaining distance without reaching he boundary
-                if (stopping_criterion_is_true(p, v, lambda, p0, v0)) {
+                if (stopping_criterion_is_true(p, v, lambda, p0, v0) && reflectionsNum > 0) {
+                    std::cout<<"stopping reached"<<std::endl;
                     // set the new point p:= (T^2)*a + T*V + p
-                    
-                    //p += (T * T) * a + T * v;
                     p = xi + ti * vi;
-                    precomputedValues.C = Ci;
+                    std::cout<<"is p Exterior = "<<spectrahedron.isExterior(p)<<std::endl;
+
                     // update matrix C
-                    //precomputedValues.C += (T * T) * precomputedValues.A + T * precomputedValues.B;
+                    precomputedValues.C = Ci;
                     return;
                 }
 
@@ -266,9 +282,11 @@ public:
                 //lambda *= dl;
 
                 // save current and set new point
-                previousPoint = p;
+                //previousPoint = p;
                 p += lambda * v;
 
+                // update remaining distance we must walk
+                //T -= lambda;
 
                 // update matrix C
                 precomputedValues.C += lambda * precomputedValues.B;
@@ -281,11 +299,14 @@ public:
                 VT reflectedTrajectory;
                 spectrahedron.computeReflection(p, v, reflectedTrajectory, precomputedValues);
                 v = reflectedTrajectory;
+                std::cout<<"\n v = "<<v.transpose()<<"\n"<<std::endl;
+
+                reflectionsNum++;
             }
 
             // if the #reflections exceeded the limit, don't move
-            if (reflectionsNum == reflectionsNumBound) {
-                p = xi + ti*vi;
+            if (reflectionsNum == reflectionsNumBound){
+                p = xi + ti * vi;
                 precomputedValues.C = Ci;
             }
         }
@@ -342,7 +363,7 @@ public:
             /// \return An instance of this struct
             //template <typename Point>
             Settings(const int walkLength, const RandomNumberGenerator &randomNumberGenerator,
-                     unsigned int reflectionsBound = 10, NT dl = 0.995) : walk_length(walkLength), 
+                     unsigned int reflectionsBound = 10, NT dl = 0.95) : walk_length(walkLength), 
                                                                           randomNumberGenerator(randomNumberGenerator),
                                                                           reflectionsBound(reflectionsBound), dl(dl) {}
 
@@ -417,6 +438,7 @@ public:
                     getNextPoint<Point>(spectrahedron, p, precomputedValues);
                 }
 
+                VT qq = p;
                 // add the sample in the return list
                 points.push_back(Point(p));
             }
@@ -444,8 +466,9 @@ public:
             int reflectionsNum = 0;
             int reflectionsNumBound = settings.reflectionsBound * n;
             VT previousPoint;
-            VT p0 = p, xi, vi;
+            VT p0 = p, xi, vi, qq;
             MT Ci;
+            std::cout<<"is p0 Exterior = "<<spectrahedron.isExterior(p0)<<std::endl;
 
             // choose a distance to walk
             NT T = 0.0, ti, w2, w1, u, t_temp;
@@ -461,19 +484,28 @@ public:
             VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
             VT v0 = v;
             std::cout<<"Hi3"<<std::endl;
+            precomputedValues.computed_C = false;
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound
-            while (reflectionsNum++ < reflectionsNumBound) {
+            while (reflectionsNum < reflectionsNumBound) {
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
+                std::cout<<"is p Exterior = "<<spectrahedron.isExterior(p)<<std::endl;
+                std::cout<<"p = "<<p.transpose()<<std::endl;
                 std::cout<<"computing oracle boundary"<<std::endl;
                 NT lambda = spectrahedron.positiveIntersection(p, v, precomputedValues);
+                if (lambda <=0){
+                    std::cout<<"lambda = "<<lambda<<std::endl;
+                    exit(-1);
+                }
                 std::cout<<"lambda = "<<lambda<<std::endl;
                 lambda *= dl;
+                qq = p + lambda * v;
+                std::cout<<"is pi + tvi Exterior = "<<spectrahedron.isExterior(qq)<<std::endl;
                 t_temp = rng.sample_urdist() * lambda;
-                w1 = T / (T + lambda);
+                //w1 = T / (T + lambda);
                 w2 = lambda / (T + lambda);
                 std::cout<<"w2 = "<<w2<<std::endl;
                 u = rng.sample_urdist();
@@ -500,10 +532,11 @@ public:
                 //precomputedValues.computed_XY = true;
 
                 // if we can walk the remaining distance without reaching he boundary
-                if (stopping_criterion_is_true(p, v, lambda, p0, v0)) {
+                if (stopping_criterion_is_true(p, v, lambda, p0, v0) && reflectionsNum > 0) {
                     std::cout<<"stopping reached"<<std::endl;
                     // set the new point p:= (T^2)*a + T*V + p
                     p = xi + ti * vi;
+                    std::cout<<"is p Exterior = "<<spectrahedron.isExterior(p)<<std::endl;
 
                     // update matrix C
                     precomputedValues.C = Ci;
@@ -532,6 +565,9 @@ public:
                 VT reflectedTrajectory;
                 spectrahedron.computeReflection(p, v, reflectedTrajectory, precomputedValues);
                 v = reflectedTrajectory;
+                std::cout<<"\n v = "<<v.transpose()<<"\n"<<std::endl;
+
+                reflectionsNum++;
             }
 
             // if the #reflections exceeded the limit, don't move

@@ -41,8 +41,8 @@ public:
     /// otherwise full. The partial is faster but assumes that the matrix has full rank.
 #if defined(PARTIAL_LU_DECOMPOSITION)
     //typedef Eigen::PartialPivLU<MT> Decomposition;
-    //typedef Eigen::SimplicialLDLT<MT, Eigen::Lower> Decomposition;
-    typedef Eigen::SparseLU<MT, Eigen::COLAMDOrdering<int> > Decomposition;
+    typedef Eigen::SimplicialLDLT<MT, Eigen::Lower> Decomposition;
+    //typedef Eigen::SparseLU<MT, Eigen::COLAMDOrdering<int> > Decomposition;
 #else
     typedef Eigen::FullPivLU<MT> Decomposition;
 #endif
@@ -57,6 +57,7 @@ public:
     SparseSymGenProdMatrix(MT const *A, MT const *B) : A(A), B(B) {
         Blu.analyzePattern(*B);
         Blu.factorize(*B);
+        //Blu.compute(*B);
         _rows = A->rows();
         _cols = B->cols();
     }

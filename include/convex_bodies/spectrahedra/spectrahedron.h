@@ -10,8 +10,13 @@
 #ifndef VOLESTI_SPECTRAHEDRON_H
 #define VOLESTI_SPECTRAHEDRON_H
 
+#include <format.hpp>
+
 #include "newLMI.h"
 #include "chrono"
+#include "generators/boost_random_number_generator.hpp"
+#include "../../sampling/sphere.hpp"
+
 
 template <typename MT>
 struct PrecomputedValues {
@@ -245,6 +250,23 @@ public:
         return distance;
     }
 
+     pairNT RandomDirectionIntersection(VT const &p, VT const &v, PrecomputedValues2& precomputedValues) {
+
+        // prepare the generalized eigenvalue problem A+lB
+        // we may not have to compute A!
+        if (!precomputedValues.computed_C)
+            lmi.evaluate(p, precomputedValues.C);
+
+        lmi.evaluateWithoutA0(v, precomputedValues.B);
+
+        #if defined(SPARSE_PROBLEM)
+            SparseEigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
+        #elif defined(DENSE_PROBLEM)
+            EigenvaluesProblems<NT, MT, VT> eigenvaluesProblems;
+        #endif
+        return eigenvaluesProblems.symGeneralizedProblem(precomputedValues.C, precomputedValues.B);
+    }
+
 
     /// Computes the distance d one must travel on the line a + tb,
     /// assuming we start at t=0 and that b has zero everywhere and 1 in its i-th coordinate.
@@ -299,8 +321,93 @@ public:
         return lmi;
     }
 
-    
 
+
+    /// Estimates the diameter of the spectrahedron. It samples points uniformly with coordinate directions
+    /// hit and run, and returns the maximum distance between them.
+    /// \tparam Point
+    /// \param[in] numPoints The number of points to sample for the estimation
+    /// \return An estimation of the diameter of the spectrahedron
+    template<class Point, class RNGType>
+    NT estimateDiameterRDHR(int const numPoints, Point const & interiorPoint, RNGType &rng, VT const& c, VT &best_point) {
+        //typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
+
+        //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        //RNGType rng(seed);
+        int n = dimension();
+
+        std::list<Point> randPoints;
+
+        // initialize random numbers generators
+        boost::random::uniform_real_distribution<> urdist(0, 1);
+        boost::random::uniform_int_distribution<> uidist(1, d);
+
+        PrecomputedValues2 precomputedValues;
+        precomputedValues.set_mat_size(getLMI().sizeOfMatrices());
+        VT p = interiorPoint.getCoefficients(), v;
+        NT maxDistance = 0, best_opt = c.dot(p);
+        //best_point = interiorPoint;
+
+        // sample points with walk length set to 1
+        int samplingNo=0;
+        VT q;
+        while (samplingNo<numPoints) {
+            // uniformly select a line parallel to an axis,
+            // i.e. an indicator i s.t. x_i = 1
+            //int coordinate = uidist(rng);
+            v = GetDirection<Point>::apply(n, rng).getCoefficients();
+
+            // get the distances we can travel from p
+            // on the line p + t* e_coordinate
+            // before reaching the boundary
+            //std::pair<NT, NT> distances = this->coordinateIntersection(p, coordinate, precomputedValues);
+            std::pair<NT, NT> distances = this->RandomDirectionIntersection(p, v, precomputedValues);
+            //std::cout << "distances.second = "<<distances.second<<std::endl;
+            //std::cout << "distances.first = "<<distances.first<<"\n"<<std::endl;
+            // uniformly set the new point on the segment
+            // defined by the intersection points
+            NT lambda = rng.sample_urdist();
+            NT diff = distances.second + lambda * (distances.first - distances.second);
+            if ( (distances.first - distances.second) > maxDistance ) {
+                maxDistance = (distances.first - distances.second);
+            }
+
+            q = p + diff * v;
+            if (this->isExterior(p)==1) {
+                continue;
+            }
+            p=q;
+
+            // update the precomputedValues, so we can skip
+            // computations in the next call
+            precomputedValues.computed_C = true;
+            precomputedValues.C += diff * precomputedValues.B;
+            randPoints.push_back(Point(p));
+            samplingNo++;
+        }
+
+        // find maximum distance among points;
+        
+        typename std::list<Point>::iterator itInner, itOuter = randPoints.begin();
+
+        for (; itOuter!=randPoints.end() ; ++itOuter) {
+            NT temp_opt = c.dot((*itOuter).getCoefficients());
+            if (temp_opt < best_opt) {
+                best_opt = temp_opt;
+                best_point = (*itOuter).getCoefficients();
+            }
+            for (itInner=itOuter ; itInner!=randPoints.end() ; ++itInner) {
+                NT current = itOuter->distance(*itInner);
+                if (current > maxDistance)
+                    maxDistance = current;
+            }
+        }
+
+        return maxDistance;
+    }
+
+
+   
     /// Estimates the diameter of the spectrahedron. It samples points uniformly with coordinate directions
     /// hit and run, and returns the maximum distance between them.
     /// \tparam Point
@@ -372,7 +479,7 @@ public:
     /// Find out is pos is in the exterior of the spectrahedron
     /// \param pos a vector
     /// \return true if pos is outside the spectrahedron
-    bool isExterior(VT const & pos) {
+    bool isExterior(VT &pos) {
         return !lmi.isNegativeSemidefinite(pos);
     }
 };

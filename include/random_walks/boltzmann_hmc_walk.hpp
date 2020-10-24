@@ -404,7 +404,7 @@ public:
             const NT dl = settings.dl;
             unsigned int n = spectrahedron.dimension();
             int reflectionsNum = 0;
-            int reflectionsNumBound = settings.reflectionsBound * n;
+            int reflectionsNumBound = settings.reflectionsBound * std::sqrt(NT(n));
             VT previousPoint;
             VT p0 = p;
 
@@ -474,6 +474,7 @@ public:
                 VT reflectedTrajectory;
                 spectrahedron.computeReflection(p, v, reflectedTrajectory, precomputedValues);
                 v = reflectedTrajectory;
+                //std::cout << "reflectionsNum = "<<reflectionsNum<<std::endl;
             }
 
             // if the #reflections exceeded the limit, don't move

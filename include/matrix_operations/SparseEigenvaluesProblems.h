@@ -132,19 +132,55 @@ public:
         int matrixDim = A.rows();
         double lambdaMinPositive;
 
-        MT _B = -1.0 * B;
-        SparseSymGenProdMatrix<NT> _M(&_B, &A);
+        Spectra::SparseSymMatProd<NT> op(B);
+        Spectra::SparseCholesky<NT> Bop(-A);
+        std::cout<<"A = "<<Eigen::MatrixXd(A)<<"\n\n"<<std::endl;
+        std::cout<<"B = "<<Eigen::MatrixXd(B)<<"\n\n"<<std::endl;
+
+        // Construct generalized eigen solver object, requesting the largest three generalized eigenvalues
+        Spectra::SymGEigsSolver<NT, Spectra::LARGEST_ALGE, Spectra::SparseSymMatProd<NT>, Spectra::SparseCholesky<NT>, Spectra::GEIGS_CHOLESKY> geigs(&op, &Bop, 1, 15 < matrixDim ? 15 : matrixDim);
+
+        // Initialize and compute
+        geigs.init();
+        int nconv = geigs.compute();
+
+        // Retrieve results
+        VT evalues;
+        //Eigen::MatrixXd evecs;
+
+        if (geigs.info() == Spectra::SUCCESSFUL) {
+            evalues = geigs.eigenvalues();
+            eigvec = geigs.eigenvectors().col(0);
+        }
+
+        lambdaMinPositive = 1 / evalues(0);
+
+        std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+        std::cout<<"eigvec = "<<eigvec.transpose()<<"\n\n"<<std::endl;
+
+        std::cout<<"lBx = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose()<<"\n"<<std::endl;
+        std::cout<<"Ax = "<<(((-A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
+
+
+
+    /*
+
+        int matrixDim = A.rows();
+        double lambdaMinPositive;
+
+        MT _A = -1.0 * A;
+        SparseSymGenProdMatrix<NT> _M(&B, &_A);
         
         std::cout<<"calling arpack"<<std::endl; 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
         ARNonSymStdEig<NT, SparseSymGenProdMatrix<NT> >
-        dprob(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+        dprob(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 12 : 8, TOL);//, 100*3);
 
         if (dprob.FindEigenvectors() == 0) {
             
             std::cout<<"lambdaMinPositive failed"<<std::endl;
-            dprob.ChangeNcv(12);
+            dprob.ChangeNcv(16);
             dprob.ChangeMaxit(2*dprob.GetMaxit());
             //dprob.ChangeTol(tol_*0.1);
             if (dprob.FindEigenvectors() == 0) {
@@ -167,6 +203,11 @@ public:
             }
         }
         std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+        std::cout<<"eigvec = "<<eigvec.transpose()<<"\n\n"<<std::endl;
+
+        std::cout<<"lBx + Ax = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose() + (((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n"<<std::endl;
+        std::cout<<"Ax = "<<(((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
+    */
         return lambdaMinPositive;
     }
 
@@ -182,8 +223,8 @@ public:
 
         #if defined(ARPACK_EIGENVALUES_SOLVER)
 
-        MT _B = -1.0 * B;
-        SparseSymGenProdMatrix<NT> _M(&_B, &A);
+        MT _A = -1.0 *A;
+        SparseSymGenProdMatrix<NT> _M(&B, &_A);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
@@ -393,7 +434,7 @@ public:
         // retrieve eigenvalue of the original system
         lambdaMinPositive = 1/dprob.EigenvalueReal(0);
 
-        eigenvector.setZero((2*A.cols()));
+        //eigenvector.setZero((2*A.cols()));
         if (dprob.EigenvectorsFound()) {
             //retrieve corresponding eigenvector
             for (int i=0 ;i<(2*A.cols()) ; i++)
