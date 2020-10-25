@@ -259,7 +259,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     std::cout << "Step: " << stepsCount << ", Temperature: " << temperature << ", Min: " << currentMin
                       << ", Relative error: " << std::abs(currentMin - optimal_val) / std::abs(optimal_val)
                       << ", optimal_val: " << optimal_val<< ", settings.error: " << settings.error<< "\n";
-    temperature = 600.0;
+    //temperature = 600.0;
     Point temp_point(spectrahedron.dimension());
     bool improved;
     /******** solve *********/

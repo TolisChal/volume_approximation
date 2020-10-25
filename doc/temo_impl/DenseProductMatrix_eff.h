@@ -7,8 +7,8 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_DENSEPRODUCTMATRIX_H
-#define VOLESTI_DENSEPRODUCTMATRIX_H
+#ifndef VOLESTI_DENSEPRODUCTMATRIX_EFF_H
+#define VOLESTI_DENSEPRODUCTMATRIX_EFF_H
 
 #define PARTIAL_LU_DECOMPOSITION
 #define CHOLESKY_PIVOTING_DECOMPOSITION
@@ -19,8 +19,8 @@
 /// In particular, this class represents the product @f[ C = B^-1 A @f]
 ///
 /// \tparam NT Numeric Type
-template<typename NT>
-class DenseProductMatrix {
+template<typename NT, typename decomposition>
+class DenseProductMatrixEff {
 public:
     /// Eigen matrix type
     typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
@@ -32,45 +32,30 @@ public:
     /// The number of cols
     int _cols;
 
-    /// Pointer to matrix A
-    MT const *A;
     /// Pointer to matrix B
     MT const *B;
     /// Pointer to matrix C
     MT const *C;
+    MT const *A;
+
+    decomposition *Alu;
+
+    NT temperature;
 
     VT v;
 
     int m;
-
-    /// The decomposition we will use
-    /// If PARTIAL_LU_DECOMPOSITION is defined, use the Eigen partial LU decomposition,
-    /// otherwise full. The partial is faster but assumes that the matrix has full rank.
-#if defined(PARTIAL_LU_DECOMPOSITION)
-    typedef Eigen::PartialPivLU<MT> lu_decomposition;    
-#else
-    typedef Eigen::FullPivLU<MT> lu_decomposition;
-#endif
-
-#if defined(CHOLESKY_PIVOTING_DECOMPOSITION)
-    //typedef Eigen::PartialPivLU<MT> cholesky_decomposition;
     typedef Eigen::LDLT<MT, Eigen::Lower> cholesky_decomposition;
-#else
-    typedef Eigen::LLT<MT> cholesky_decomposition;
-#endif
-
-    /// The LU decomposition of B
-    //lu_decomposition Blu;
     cholesky_decomposition llt;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    DenseProductMatrix(MT const *A, MT const *B, MT const *C) : A(A), B(B), C(C) {
+    DenseProductMatrixEff(MT const *A, MT const *B, MT const *C, NT const& _temperature, decomposition *_Alu) :A(A), B(B), C(C), Alu(_Alu) {
         //Blu.compute(*B);
         
-        _rows = 2*(A->rows());
+        _rows = 2*(B->rows());
         _cols = 2*(B->cols());
         //_rows *= 2;
         //_cols *= 2;
@@ -79,6 +64,8 @@ public:
         //std::cout<<"_cols = "<<_cols<<std::endl;
 
         m = _cols / 2;
+        //Alu(_Alu);
+        temperature = _temperature;
         llt.compute(*C);
 
         v.setZero(_rows);
@@ -109,6 +96,9 @@ public:
         Eigen::Map<const VT> x(x_in, _cols);
         //VT const v = *A * x;
         //int r = _rows / 2;
+        //v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
+
         v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
         v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
 
@@ -122,6 +112,11 @@ public:
         y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
         v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
         y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
+        
+
+        //y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        //y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
     }
 
     /// Required by arpack.
@@ -148,6 +143,10 @@ public:
 
         //std::cout<<"x = "<<x.transpose()<<std::endl;
     
+        //v.block(m, 0, m, 1).noalias() = (*C).template selfadjointView< Eigen::Lower >() * x.block(m, 0, m, 1);
+        //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
+        
+        
         v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
         v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
 
@@ -161,6 +160,15 @@ public:
         y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
         v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
         y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
+        //y.noalias() = Blu.solve(v);
+
+        //VT yy(_rows);
+        //std::cout<<"\n B = "<<(*B)<<"\n"<<std::endl;
+        //std::cout<<"B.block(0, m, m, m) = "<<(*B).block(0, r, r, r)<<"\n"<<std::endl;
+        //std::cout<<"v = "<<v.transpose()<<std::endl;
+        //y.block(0, 0, m, 1).noalias() = llt.solve(v.block(m, 0, m, 1));
+        //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
+        //y.block(m, 0, m, 1).noalias() = llt.solve(-v.block(0, 0, m, 1));
         
 
         
@@ -170,3 +178,4 @@ public:
     }
 };
 #endif //VOLESTI_DENSEPRODUCTMATRIX_H
+
