@@ -247,6 +247,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
 
     // initialize random walk;
     RNGType rng(spectrahedron.dimension());
+    temperature = 5600.0;
     typename HMC::Settings hmc_settings = typename HMC::Settings(settings.walkLength, rng, 
                                                                  objectiveFunctionNormed, 
                                                                  temperature, diameter);
@@ -259,7 +260,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     std::cout << "Step: " << stepsCount << ", Temperature: " << temperature << ", Min: " << currentMin
                       << ", Relative error: " << std::abs(currentMin - optimal_val) / std::abs(optimal_val)
                       << ", optimal_val: " << optimal_val<< ", settings.error: " << settings.error<< "\n";
-    //temperature = 600.0;
+    
     Point temp_point(spectrahedron.dimension());
     bool improved;
     /******** solve *********/
