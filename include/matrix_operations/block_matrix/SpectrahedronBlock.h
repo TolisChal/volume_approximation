@@ -7,12 +7,12 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_SPECTRAHEDRON_H
-#define VOLESTI_SPECTRAHEDRON_H
+#ifndef VOLESTI_SPECTRAHEDRONBLOCK_H
+#define VOLESTI_SPECTRAHEDRONBLOCK_H
 
 #include <format.hpp>
 
-#include "newLMI.h"
+#include "BlockLMI.h"
 #include "chrono"
 #include "generators/boost_random_number_generator.hpp"
 #include "../../sampling/sphere.hpp"
@@ -89,7 +89,6 @@ public:
     typedef std::pair<NT, NT> pairNT;
 
     BlockEigenvaluesProblems<NT, MT, VT> EigenvaluesProblem;
-
 
     /// The dimension of the spectrahedron
     unsigned int d;

@@ -69,6 +69,9 @@ IF (OPENBLAS_LIB)
 	    add_executable (solve_sparse_from_dense_sdp solve_sparse_from_dense_sdp.cpp)
             TARGET_LINK_LIBRARIES(solve_sparse_from_dense_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
 
+	    add_executable (solve_block_sdp solve_block_sdp.cpp)
+            TARGET_LINK_LIBRARIES(solve_block_sdp ${ARPACK_LIB} ${LAPACK_LIBRARIES} ${GFORTRAN_LIB})
+
         ELSE()
             MESSAGE(STATUS "gfortran is required but it could not be found")
         ENDIF ()

@@ -7,17 +7,17 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_EIGENDENSEMATRIX_H
-#define VOLESTI_EIGENDENSEMATRIX_H
+#ifndef VOLESTI_BLOCKMATRIXMULT_H
+#define VOLESTI_BLOCKMATRIXMULT_H
 
 /// A wrap class to use Eigen dense matrices when solving Eigenvalue problems with ARPACK++
 /// \tparam NT Numeric Type
 template<class NT>
-class EigenDenseMatrix {
+class BlockMatrixMult {
 public:
 
     /// Eigen matrix type
-    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
+    typedef SparseBlock<NT> MT;
     /// Eigen vector type
     typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
 
@@ -49,7 +49,9 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        _w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
+        (*M).multiply(_v, _w);
+
+        //_w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
 
     /// Required by ARPACK++ : Multiplies the matrix with vector v
@@ -60,13 +62,15 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        _w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
+        (*M).multiply(_v, _w);
+
+        //_w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
 
 
     /// Constructs an object
     /// \param[in] M An Eigen Matrix
-    EigenDenseMatrix(MT const * M) {
+    BlockMatrixMult(MT const * M) {
         this->M = M;
         n = M->cols();
         m = M->rows();

@@ -7,8 +7,8 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef VOLESTI_EIGENVALUESPROBLEMS_H
-#define VOLESTI_EIGENVALUESPROBLEMS_H
+#ifndef VOLESTI_BLOCKEIGENVALUESPROBLEMS_H
+#define VOLESTI_BLOCKEIGENVALUESPROBLEMS_H
 
 /// Uncomment the solver the function minPosGeneralizedEigenvalue uses
 /// Eigen solver for generalized eigenvalue problem
@@ -17,13 +17,14 @@
 //#define SPECTRA_EIGENVALUES_SOLVER
 /// ARPACK++ standard eigenvalues solver
 #define ARPACK_EIGENVALUES_SOLVER
+#define SPECTRA_ONLY_FOR_SYMEIG
 #define TOL 1e-04
 
 #include <../../external/arpack++/include/arssym.h>
 #include <../../external/Spectra/include/Spectra/SymEigsSolver.h>
-#include "DenseProductMatrix.h"
-#include "SymGenProdMatrix.h"
-#include "EigenDenseMatrix.h"
+#include "BlockMatrixMult.h"
+#include "BlockMatrixGenEig.h"
+#include "BlockMatrixQuadEig.h"
 
 #include "../../external/Spectra/include/Spectra/SymGEigsSolver.h"
 #include "../../external/Spectra/include/Spectra/GenEigsSolver.h"
@@ -35,7 +36,7 @@
 /// \tparam MT Matrix Type
 /// \tparam VT Vector Type
 template<typename NT, typename MT, typename VT>
-class EigenvaluesProblems {
+class BlockEigenvaluesProblems {
 
 };
 
@@ -43,10 +44,10 @@ class EigenvaluesProblems {
 /// A specialization of the template class EigenvaluesProblems for dense Eigen matrices and vectors.
 /// \tparam NT
 template<typename NT>
-class EigenvaluesProblems<NT, Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
+class BlockEigenvaluesProblems<NT, SparseBlock<NT>, Eigen::Matrix<NT,Eigen::Dynamic,1> > {
 public:
     /// The type for Eigen Matrix
-    typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+    typedef SparseBlock<NT> MT;
     /// The type for Eigen vector
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
     /// The type of a complex Eigen Vector for handling eigenvectors
@@ -64,7 +65,7 @@ public:
     /// \param M a symmetric matrix
     /// \return smallest eigenvalue
     NT findSymEigenvalue(MT const & M) {
-        EigenDenseMatrix<NT> _M(&M);
+        BlockMatrixMult<NT> _M(&M);
 
 //#define NOT_WORKING
 #ifdef NOT_WORKING
@@ -91,14 +92,14 @@ public:
 
         // retrieve eigenvalue of the original system
         return dprob.EigenvalueReal(0);
-#elif defined(SPECTRA)
+#elif defined(SPECTRA_ONLY_FOR_SYMEIG)
         std::cout << "findSymEigenvalue Spectra\n";
         // This parameter is for Spectra. It must be larger than #(requested eigenvalues) + 2
         // and smaller than the size of matrix;
         int ncv = M.cols()/10 + 5;
         if (ncv > M.cols()) ncv = M.cols();
 
-        Spectra::SymEigsSolver<NT, Spectra::LARGEST_ALGE, EigenDenseMatrix<NT> > eigs(&_M, 1, ncv);
+        Spectra::SymEigsSolver<NT, Spectra::LARGEST_ALGE, BlockMatrixMult<NT> > eigs(&_M, 1, ncv);
         // compute
         eigs.init();
         eigs.compute(50000);
@@ -123,97 +124,6 @@ public:
     }
 
 
-
-    /// Find the minimum positive and maximum negative eigenvalues of the generalized eigenvalue
-    /// problem A + lB, where A, B symmetric and A negative definite.
-    /// \param[in] A Input matrix
-    /// \param[in] B Input matrix
-    /// \return The pair (minimum positive, maximum negative) of eigenvalues
-    NT minPosLinearEigenvalue(MT const & A, MT const & B, VT &eigvec) 
-    {
-        int matrixDim = A.rows();
-        double lambdaMinPositive;
-
-        Spectra::DenseSymMatProd<NT> op(B);
-        Spectra::DenseCholesky<NT> Bop(-A);
-        //std::cout<<"A = "<<Eigen::MatrixXd(A)<<"\n\n"<<std::endl;
-        //std::cout<<"B = "<<Eigen::MatrixXd(B)<<"\n\n"<<std::endl;
-
-        // Construct generalized eigen solver object, requesting the largest three generalized eigenvalues
-        Spectra::SymGEigsSolver<NT, Spectra::LARGEST_ALGE,  Spectra::DenseSymMatProd<NT>, Spectra::DenseCholesky<NT>, Spectra::GEIGS_CHOLESKY> 
-            geigs(&op, &Bop, 1, 15 < matrixDim ? 15 : matrixDim);
-
-        // Initialize and compute
-        geigs.init();
-        int nconv = geigs.compute();
-
-        // Retrieve results
-        VT evalues;
-        //Eigen::MatrixXd evecs;
-
-        if (geigs.info() == Spectra::SUCCESSFUL) {
-            evalues = geigs.eigenvalues();
-            eigvec = geigs.eigenvectors().col(0);
-        }
-
-        lambdaMinPositive = 1 / evalues(0);
-
-        std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
-        std::cout<<"eigvec = "<<eigvec.transpose()<<"\n\n"<<std::endl;
-
-        std::cout<<"lBx = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose()<<"\n"<<std::endl;
-        std::cout<<"Ax = "<<(((-A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
-
-
-
-    /*
-
-        int matrixDim = A.rows();
-        double lambdaMinPositive;
-
-        MT _A = -1.0 * A;
-        SparseSymGenProdMatrix<NT> _M(&B, &_A);
-        
-        std::cout<<"calling arpack"<<std::endl; 
-        // Creating an eigenvalue problem and defining what we need:
-        // the  eigenvector of A with largest real.
-        ARNonSymStdEig<NT, SparseSymGenProdMatrix<NT> >
-        dprob(A.cols(), 1, &_M, &SparseSymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 12 : 8, TOL);//, 100*3);
-
-        if (dprob.FindEigenvectors() == 0) {
-            
-            std::cout<<"lambdaMinPositive failed"<<std::endl;
-            dprob.ChangeNcv(16);
-            dprob.ChangeMaxit(2*dprob.GetMaxit());
-            //dprob.ChangeTol(tol_*0.1);
-            if (dprob.FindEigenvectors() == 0) {
-                std::cout << "\tlambdaMinPositive Failed Again\n";
-            } else {
-                std::cout<<"lambdaMinPositive computed"<<std::endl;
-                lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
-                for (int i=0 ; i < matrixDim; i++) {
-                    eigvec(i) = dprob.EigenvectorReal(0, i);
-                }
-                //std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
-            }
-            // if failed to find eigenvalues
-            //return {0.0, 0.0};
-        } else {
-            std::cout<<"lambdaMinPositive computed"<<std::endl;
-            lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
-            for (int i=0 ; i < matrixDim; i++) {
-                eigvec(i) = dprob.EigenvectorReal(0, i);
-            }
-        }
-        std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
-        std::cout<<"eigvec = "<<eigvec.transpose()<<"\n\n"<<std::endl;
-
-        std::cout<<"lBx + Ax = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose() + (((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n"<<std::endl;
-        std::cout<<"Ax = "<<(((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
-    */
-        return lambdaMinPositive;
-    }
-
     /// Find the minimum positive and maximum negative eigenvalues of the generalized eigenvalue
     /// problem A + lB, where A, B symmetric and A negative definite.
     /// \param[in] A Input matrix
@@ -228,12 +138,12 @@ public:
         
 
         MT _B = -1.0 * B;
-        SymGenProdMatrix<NT> _M(&_B, &A);
+        BlockMatrixGenEig<NT> _M(&_B, &A);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
-        ARNonSymStdEig<NT, SymGenProdMatrix<NT> >
-        dprob(A.cols(), 1, &_M, &SymGenProdMatrix<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+        ARNonSymStdEig<NT, BlockMatrixGenEig<NT> >
+        dprob(A.cols(), 1, &_M, &BlockMatrixGenEig<NT>::MultMv, std::string ("LR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
 
         if (dprob.FindEigenvectors() == 0) {
             
@@ -256,8 +166,8 @@ public:
         // retrieve eigenvalue of the original system
         
  
-        ARNonSymStdEig<NT, SymGenProdMatrix<NT> >
-        dprob2(A.cols(), 1, &_M, &SymGenProdMatrix<NT>::MultMv, std::string ("SR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
+        ARNonSymStdEig<NT, BlockMatrixGenEig<NT> >
+        dprob2(A.cols(), 1, &_M, &BlockMatrixGenEig<NT>::MultMv, std::string ("SR"), A.cols()<250 ? 8 : 6, TOL);//, 100*3);
 
         //if (!dprob2.EigenvaluesFound()) {
             // if failed to find eigenvalues
@@ -412,7 +322,7 @@ public:
         // We have the generalized problem  A + lB, or Av = -lBv
         // This class computes the matrix product vector Mv, where M = -B * A^[-1]
         //MT _B = -1 * B; // TODO avoid this allocation
-        DenseProductMatrix<NT> M(&A, &B, &C);
+        BlockMatrixQuadEig<NT> M(&A, &B, &C);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
@@ -420,7 +330,8 @@ public:
         //std::cout<<"rows = "<<A.rows()<<", cols = "<<A.cols()<<std::endl;
         //const NT tol_ = 1e-04;
         //std::cout<<"tol_ = "<<tol_<<std::endl;
-        ARNonSymStdEig<NT, DenseProductMatrix<NT> >dprob((2*A.cols()), 1, &M, &DenseProductMatrix<NT>::MultMv, std::string ("LR"), ((2*A.cols()))<250 ? 8 : 6, TOL);//, 150);
+        ARNonSymStdEig<NT, BlockMatrixQuadEig<NT> >dprob((2*A.cols()), 1, &M, &BlockMatrixQuadEig<NT>::MultMv, 
+                                                         std::string ("LR"), ((2*A.cols()))<250 ? 8 : 6, TOL);//, 150);
 
         // compute        
         if (dprob.FindEigenvectors() == 0) {
@@ -470,7 +381,7 @@ public:
     /// \param[in, out] X
     /// \param[in, out] Y
     /// \param[in, out] updateOnly True if X,Y were previously computed and only B,C changed
-    void linearization(const MT &A, const MT &B, const MT &C, MT &X, MT &Y, bool updateOnly) {
+    /*void linearization(const MT &A, const MT &B, const MT &C, MT &X, MT &Y, bool updateOnly) {
         unsigned int matrixDim = A.rows();
 
         // check if the matrices X,Y are computed.
@@ -495,7 +406,7 @@ public:
             X.block(0, 0, matrixDim, matrixDim) = B;
             X.block(matrixDim, 0, matrixDim, matrixDim) = C;
         }
-    }
+    }*/
 
     /// Find the minimum positive real eigenvalue of the quadratic eigenvalue problem \[At^2 + Bt + c\].
     /// First transform it to the generalized eigenvalue problem X+lY.

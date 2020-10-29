@@ -1,5 +1,9 @@
 // a new data structure
 
+#ifndef VOLESTI_BLOCKSPARSEMATRIX_H
+#define VOLESTI_BLOCKSPARSEMATRIX_H
+
+
 template <typename MT>
 struct decompositioner {
     
@@ -96,18 +100,20 @@ public:
     /// The type for Dense Eigen Matrix
     typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> DMT;
 
-    decompositioner<NT> takis;
-
     std::vector<MT> blocks;
     std::vector< std::pair<int, int> > block_limits;
-    int num_of_blocks;
+    int num_of_blocks, dimension;
+
+    SparseBlock() {}
 
     SparseBlock(std::vector<MT> const& _blocks) : blocks(_blocks)
     {
         typename std::vector<MT>::iterator iter = _blocks.begin();
         int r_start = 0, r_end;
+        dimension = 0;
         for (; iter != _blocks.end(); iter++) 
         {
+            dimension += (*iter).rows();
             r_end = (*iter).rows() - 1 + r_start;
             block_limits.push_back(std::pair<int, int>(r_start, r_end));
             r_start = r_end + 1;
@@ -125,16 +131,35 @@ public:
         {
             length = (*iter_limits).second - (*iter_limits).first + 1;
             res.block((*iter_limits).first, 0, length, 1).noalias() = 
-                             (*iter_mat) * vec.block((*iter_limits).first, 0, length, 1);
+                             (*iter_mat).template selfadjointView< Eigen::Lower >() * vec.block((*iter_limits).first, 0, length, 1);
         }
     }
 
-    int get_num_of_blocks() const {
+    int get_num_of_blocks() const 
+    {
         return num_of_blocks;
     }
 
-    std::vector< std::pair<int, int> > get_block_limits() const {
+    int get_dimension() const {
+        return dimension;
+    }
+
+    int cols() {
+        return dimension;
+    }
+
+    int rows() {
+        return dimension;
+    }
+
+    std::vector< std::pair<int, int> > get_block_limits() const 
+    {
         return block_limits;
+    }
+
+    std::vector<MT> get_all_blocks() 
+    {
+        return blocks;
     }
 
     MT get_block(unsigned int const& i) const
@@ -146,10 +171,38 @@ public:
         return blocks[i]; 
     }
 
+    void operator= (SparseBlock const& A)
+    {
+        this->blocks = A.get_all_blocks();
+        this->block_limits = A.get_block_limits();
+        this->num_of_blocks = A.get_num_of_blocks();
+    }
+
+    void operator*= (NT const& k)
+    {
+        for (;  iter != blocks.end(); iter_mat++) 
+        {
+            (*iter_mat) *= k;
+        }
+    }
+
+    SparseBlock operator* (NT const& k)
+    {
+        SparseBlock B = (*this);
+        B *= k;
+        return B
+    }
+
+    VT operator* (VT const& x)
+    {
+        VT res(x.rows());
+        multiply(x, res);
+        return res;
+    }
+
     void operator+= (SparseBlock const& A)
     {
         typename std::vector<MT>::iterator iter_mat = blocks.begin();
-        //typename std::vector< std::pair<int, int> >::iterator iter_limits = block_limits.begin();
         unsigned int counter = 0;
 
         for (;  iter != blocks.end(); iter_mat++, counter++) 
@@ -158,6 +211,19 @@ public:
         }
     }
 
-
+    SparseBlock operator+ (SparseBlock const& A)
+    {
+        SparseBlock B = A;
+        B += (*this);
+        return B;
+    }
 
 };
+
+template<typename NT>
+SparseBlock<NT> operator* (NT const& k, SparseBlock<NT> const& A)
+{
+    return A * k;
+}
+
+#endif
