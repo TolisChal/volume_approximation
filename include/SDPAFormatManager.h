@@ -599,5 +599,155 @@ void loadSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFunction
 }
 
 
+
+
+/// Reads an SDPA format file
+/// \param[in] is An open stram pointing to the file
+/// \param[out] matrices the matrices A0, A1, A2, ..., An
+/// \param[out] objectiveFunction The objective function of the sdp
+template <typename MT, typename SMT, typename NT, typename LMII, typename VT>
+void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFunction) {
+    std::string line;
+    std::string::size_type sz;
+    SdpaFormatManager<NT> spm;
+    typedef std::list<NT> listVector;
+
+    typedef Eigen::Triplet<NT> T;
+    std::vector<T> tripletList;
+
+    std::getline(is, line, '\n');
+
+    //skip comments
+    while (spm.isCommentLine(line)) {
+        std::getline(is, line, '\n');
+    }
+
+    //read variables number
+    int variablesNum = spm.fetchNumber(line);
+
+    if (std::getline(is, line, '\n').eof())
+        throw std::runtime_error("Unexpected end of file");
+
+    //read number of blocks
+    int blocksNum = spm.fetchNumber(line);
+
+    if (std::getline(is, line, '\n').eof())
+        throw std::runtime_error("Unexpected end of file");
+
+    //read block structure vector
+    std::vector<NT> blockSizes = readVector3(line);
+
+    if (blockSizes.size() != blocksNum)
+        throw std::runtime_error("Wrong number of blocks");
+
+    if (std::getline(is, line, '\n').eof())
+        throw std::runtime_error("Unexpected end of file");
+
+    //read objective function
+    listVector constantVector = spm.readVector(line);
+
+    while (constantVector.size() < variablesNum) {
+        if (std::getline(is, line, '\n').eof())
+            throw std::runtime_error("Unexpected end of file");
+
+        std::vector<NT> t = readVector3(line);
+        constantVector.insert(std::end(constantVector), std::begin(t), std::end(t));
+    }
+
+    std::vector<MT> matrices;// = std::vector<MT>(variablesNum + 1);
+    std::vector<SMT> sparse_matrices;// = std::vector<SMT>(blocksNum);
+    int matrixDim = 0;
+    for (auto x : blockSizes)
+        matrixDim += std::abs((int) x);
+
+    //for (int i=0 ; i<matrices.size() ; ++i)
+    //    matrices[i].resize(matrixDim, matrixDim);
+    // read constraint matrices
+    // entries are of the form
+    // <matno> <blkno> <i> <j> <entry>
+    tripletList.clear();
+    SMT smatrix(matrixDim, matrixDim);
+    int current_mat = 0, current_block = 1;
+    matrixDim = blockSizes[0];
+    MT A;
+    while (!std::getline(is, line, '\n').eof()) {
+        std::vector<NT> t = readVector3(line);
+        //std::cout<<"t = "<<std::endl;
+        //for (int k = 0; k<5; k++){
+        //    std::cout<<t[k]<<" ";
+        //}
+        //std::cout<<"\n";
+        std::cout<<"current_mat = "<<current_mat<<std::endl;
+        if (t[1] != current_block) {
+            smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+            sparse_matrices.push_back(smatrix);
+            //smatrix = smatrix.pruned(ref);
+            
+            std::cout<<"number of matrix = "<<t[0]<<std::endl;
+            //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+            tripletList.clear();
+            
+            if (t[0] > current_mat) {
+                A = MT(sparse_matrices);
+                matrices.push_back(A);
+                sparse_matrices.clear();
+                current_mat++;
+                current_block = 1;
+            } else {
+                current_block++;
+            }
+            matrixDim = blockSizes[current_block - 1];
+            smatrix = SMT(matrixDim, matrixDim);
+        }
+//            std::cout << line << "\n";
+        int blockOffset = 0;
+        for (int i=1; i<t[1] ; ++i)
+            blockOffset += std::abs(blockSizes[i-1]);
+
+        int i = t[2] + blockOffset-1;
+        int j = t[3] + blockOffset-1;
+
+        if (i <= j) {
+            if (t[0] > 0){
+                tripletList.push_back(T(int(t[3]) - 1, int(t[2]) - 1, -t[4]));
+            } else {
+                tripletList.push_back(T(int(t[3]) - 1, int(t[2]) - 1, t[4]));
+            }
+        }
+
+        //matrices[t[0]](i,j) = t[4];
+//            std::cout << i << " " << j << "\n";
+        // matrix is symmetric
+        // only upper triangular is provided
+        // fill lower triangular
+        //if (i!=j)
+        //    matrices[t[0]](j,i) = t[4];
+    }
+    std::cout<<"current_mat = "<<current_mat<<std::endl;
+    smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    std::cout<<"variablesNum = "<<variablesNum<<std::endl;
+            //smatrix = smatrix.pruned(ref);
+    matrices[variablesNum] = smatrix;
+    
+    //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+
+
+    //for (int atMatrix=1 ; atMatrix<matrices.size() ; atMatrix++) {
+        //the LMI in SDPA format is >0, I want it <0
+        //F0 has - before it in SDPA format, the rest have +
+      //  matrices[atMatrix] *= -1;
+    //}
+    // return lmi and objective function
+    objectiveFunction.setZero(variablesNum);
+    int at = 0;
+    std::cout<<"constantVector.size() = "<<constantVector.size()<<std::endl;
+
+    for (auto value : constantVector)
+        objectiveFunction(at++) = value;
+    lmi = LMII(matrices);
+}
+
+
+
 #endif //VOLESTI_SDPA_FORMAT_MANAGER_H
 
