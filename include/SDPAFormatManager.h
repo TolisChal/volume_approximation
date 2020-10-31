@@ -678,13 +678,14 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
         //}
         //std::cout<<"\n";
         std::cout<<"current_mat = "<<current_mat<<std::endl;
+        std::cout<<"current_block = "<<current_block<<std::endl;
         if (t[1] != current_block) {
             smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
             sparse_matrices.push_back(smatrix);
             //smatrix = smatrix.pruned(ref);
             
-            std::cout<<"number of matrix = "<<t[0]<<std::endl;
-            //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+            std::cout<<"matrix to add = "<<std::endl;
+            std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
             tripletList.clear();
             
             if (t[0] > current_mat) {
@@ -700,12 +701,12 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
             smatrix = SMT(matrixDim, matrixDim);
         }
 //            std::cout << line << "\n";
-        int blockOffset = 0;
-        for (int i=1; i<t[1] ; ++i)
-            blockOffset += std::abs(blockSizes[i-1]);
+        //int blockOffset = 0;
+        //for (int i=1; i<t[1] ; ++i)
+        //    blockOffset += std::abs(blockSizes[i-1]);
 
-        int i = t[2] + blockOffset-1;
-        int j = t[3] + blockOffset-1;
+        int i = t[2] - 1;// + blockOffset-1;
+        int j = t[3] - 1;// + blockOffset-1;
 
         if (i <= j) {
             if (t[0] > 0){
@@ -725,9 +726,12 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
     }
     std::cout<<"current_mat = "<<current_mat<<std::endl;
     smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
+    sparse_matrices.push_back(smatrix);
     std::cout<<"variablesNum = "<<variablesNum<<std::endl;
+    A = MT(sparse_matrices);
+    matrices.push_back(A);
             //smatrix = smatrix.pruned(ref);
-    matrices[variablesNum] = smatrix;
+    //matrices[variablesNum] = smatrix;
     
     //std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
 

@@ -18,10 +18,10 @@
 #include "../../sampling/sphere.hpp"
 
 
-template <typename MT>
-struct PrecomputedValues {
+//template <typename MT>
+//struct PrecomputedValues {
     
-};
+//};
 
 
 template <typename NT>
@@ -72,15 +72,18 @@ struct PrecomputedValues< SparseBlock<NT> > {
 /// \tparam NT Numeric Type
 /// \tparam MT Matrix Type
 /// \tparam VT Vector Type
-template<typename NT>
+template<typename NT, typename MT, typename VT>
 class SpectrahedronBlock {
 public:
 
-    typedef SparseBlock<NT> MT;
-    typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+    typedef NT NUMERIC_TYPE;
+    typedef MT MATRIX_TYPE;
+    typedef VT VECTOR_TYPE;
+    //typedef SparseBlock<NT> MT;
+    //typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
 
     /// The numeric/matrix/vector types we use
-    typedef NT NUMERIC_TYPE;
+    //typedef NT NUMERIC_TYPE;
     //typedef MT MATRIX_TYPE;
     //typedef VT VECTOR_TYPE;
     typedef PrecomputedValues<MT> PrecomputedValues2;
@@ -95,13 +98,13 @@ public:
     VT grad;
 
     /// The linear matrix inequality that describes the spectrahedron
-    BlockLMI<NT> lmi;
+    BlockLMI<NT, MT, VT> lmi;
 
-    Spectrahedron() {}
+    SpectrahedronBlock() {}
 
     /// Creates a spectrahedron
     /// \param[in] lmi The linear matrix inequality that describes the spectrahedron
-    Spectrahedron(const BlockLMI<NT>& _lmi) : lmi(_lmi) {
+    SpectrahedronBlock(const BlockLMI<NT, MT, VT>& _lmi) : lmi(_lmi) {
         d = _lmi.dimension();
         grad.setZero(d);
     }
@@ -255,7 +258,7 @@ public:
     }
 
     /// \return The LMI describing this spectrahedron
-    LMI<NT, MT, VT> getLMI() const {
+    BlockLMI<NT, MT, VT> getLMI() const {
         return lmi;
     }
 
@@ -319,7 +322,7 @@ public:
             // update the precomputedValues, so we can skip
             // computations in the next call
             precomputedValues.computed_C = true;
-            precomputedValues.C += diff * precomputedValues.B;
+            precomputedValues.C += precomputedValues.B * diff;
             randPoints.push_back(Point(p));
             samplingNo++;
         }
@@ -410,7 +413,7 @@ public:
     /// Find out is lmi(current position) = mat is in the exterior of the spectrahedron
     /// \param mat a matrix where mat = lmi(current position)
     /// \return true if position is outside the spectrahedron
-    bool isExterior(MT const & mat) {
+    bool isExterior(MT &mat) {
         return !lmi.isNegativeSemidefinite(mat);
     }
 

@@ -31,22 +31,26 @@ public:
     int _cols;
 
     /// Pointer to matrix A
-    MT const *A;
+    MT *A;
     /// Pointer to matrix B
-    MT const *B;
+    MT *B;
+
+    VT v, r;
 
     /// The LU decomposition of B
-    decompositioner<NT> takis;
+    decompositioner<MT> takis;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    BlockMatrixGenEig(MT const *A, MT const *B) : A(A), B(B) {
+    BlockMatrixGenEig(MT *_A, MT *_B) : A(_A), B(_B) {
         //Blu.compute(*B);
         takis.compute_dense_cholesky(*B);
         _rows = A->rows();
         _cols = B->cols();
+        v.setZero(_rows);
+        r.setZero(_rows);
     }
 
     ///Required by Spectra
@@ -71,10 +75,13 @@ public:
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
         Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v = (*A).template selfadjointView< Eigen::Lower >() * x;
+        
+        (*A).multiply(x, v);
 
         Eigen::Map<VT> y(y_out, _rows);
-        takis.solve_chol_dense_ls(v, y);
+        
+        takis.solve_chol_dense_ls(v, r);
+        y = -r;
         //y = Blu.solve(v);
     }
 
@@ -88,10 +95,11 @@ public:
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
         Eigen::Map<VT> const x(const_cast<double*>(x_in), _rows);
-        VT const v = (*A).template selfadjointView< Eigen::Lower >() * x;
+        (*A).multiply(x, v);
 
         Eigen::Map<VT> y(y_out, _rows);
-        takis.solve_chol_dense_ls(v, y);
+        takis.solve_chol_dense_ls(v, r);
+        y = -r;
         //y = Blu.solve(v);
     }
 };

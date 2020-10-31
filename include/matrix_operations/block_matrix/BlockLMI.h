@@ -10,7 +10,7 @@
 #ifndef VOLESTI_BLOCKLMI_H
 #define VOLESTI_BLOCKLMI_H
 
-#include "../BlockEigenvaluesProblems.h"
+#include "BlockEigenvaluesProblems.h"
 
 
 /// This class handles a linear matrix inequality of the form \[A_0 +  \sum x_i A_i\]
@@ -40,11 +40,11 @@ class BlockLMI {
     /// At each column keep the m*(m+1)/2 distinct elements of each matrix A_i, i=1,...,d
     //MT vectorMatrix;
 
-    LMI(){}
+    BlockLMI(){}
 
     /// Creates A LMI object
     /// \param[in] matrices The matrices A_0, A_i
-    LMI(std::vector<MT>& matrices) 
+    BlockLMI(std::vector<MT>& matrices) 
     {
         d = matrices.size() - 1;
         m = matrices[0].rows();
@@ -70,6 +70,14 @@ class BlockLMI {
     /// \returns The dimension of vector x
     unsigned int dimension() const {
         return d;
+    }
+
+    std::vector< std::pair<int, int> > get_limits_of_blocks(){
+        return matrices[0].get_block_limits();
+    }
+
+    int get_number_of_blocks() {
+        return matrices[0].get_num_of_blocks();
     }
 
     /// \return The matrices A0, A1, ..., Ad
@@ -151,7 +159,7 @@ class BlockLMI {
     /// check if the matrix is negative semidefinite
     /// \param matrix a matrix
     /// \return Pointer to A_i
-    bool isNegativeSemidefinite(MT const & matrix ) const {
+    bool isNegativeSemidefinite(MT &matrix ) const {
 
         BlockEigenvaluesProblems<NT, MT, VT> EigenvaluesProblem;
         NT eival = EigenvaluesProblem.findSymEigenvalue(matrix);

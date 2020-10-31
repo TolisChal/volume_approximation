@@ -196,8 +196,9 @@ double solve_sdp(_Spectrahedron & spectrahedron, Point const & objectiveFunction
 
 
 template <typename WalkType, typename _Spectrahedron, typename Point, typename _Settings>
-double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & objectiveFunction, _Settings const & settings,
-         Point const & interiorPoint, Point& solution, double optimal_val, bool verbose = false) {
+double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & objectiveFunction, 
+                              _Settings const & settings, Point const & interiorPoint, 
+                              Point& solution, double optimal_val, bool verbose = false) {
 
     // fetch the data types we will use
     typedef  typename _Spectrahedron::NUMERIC_TYPE NT;

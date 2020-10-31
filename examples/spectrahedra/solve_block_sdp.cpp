@@ -20,6 +20,7 @@
 #include "random.hpp"
 #include "Eigen/Eigen"
 #include "cartesian_geom/cartesian_kernel.h"
+#include "convex_bodies/spectrahedra/spectrahedron.h"
 #include "matrix_operations/block_matrix/block_sparse_matrix.hpp"
 #include "matrix_operations/block_matrix/SpectrahedronBlock.h"
 #include "SDPAFormatManager.h"
@@ -37,7 +38,7 @@ typedef Eigen::Matrix <NT, Eigen::Dynamic, Eigen::Dynamic> DMT;
 typedef Eigen::SparseMatrix <NT> SMT;
 typedef Cartesian <NT> Kernel;
 typedef typename Kernel::Point Point;
-typedef SpectrahedronBlock <NT> SPECTRAHEDRON;
+typedef SpectrahedronBlock <NT, MT, VT> SPECTRAHEDRON;
 typedef BlockLMI <NT, MT, VT> lmi;
 //typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
 //typedef BoltzmannHMCWalk::Walk<Spectrahedron, RNGType > HMC1;

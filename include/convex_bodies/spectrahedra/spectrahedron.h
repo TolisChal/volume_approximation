@@ -116,6 +116,7 @@ struct PrecomputedValues<Eigen::SparseMatrix<NT>> {
 
 
 
+
 /// This class manipulates a spectrahedron, described by a LMI
 /// \tparam NT Numeric Type
 /// \tparam MT Matrix Type

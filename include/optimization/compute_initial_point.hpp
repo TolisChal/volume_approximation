@@ -20,11 +20,89 @@
 //#define CONSTANT_1 20
 
 
+template <typename MT>
+struct set_to_identity {
+    
+};
+
+template <typename NT>
+struct set_to_identity<Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> > {
+public:
+
+    typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> MT;
+
+    static MT apply(int const& n) {
+        MT A = MT::Identity(n, n);
+        return A;
+    }
+
+};
+
+
+template <typename NT>
+struct set_to_identity<Eigen::SparseMatrix<NT> > {
+public:
+
+    typedef Eigen::SparseMatrix<NT> MT;
+
+    template<typename lmiclass>
+    static MT apply(int const& n, lmiclass const &lmi) {
+        typedef Eigen::Triplet<NT> T;
+        std::vector<T> tripletList;
+
+        for (int j=0; j<n; j++) 
+        {
+            tripletList.push_back(T(j, j, 1.0));
+        }
+        MT A(n, n);
+        A.setFromTriplets(tripletList.begin(), tripletList.end());
+        return A;
+    }
+
+};
+
+template <typename NT>
+struct set_to_identity<SparseBlock<NT> > {
+public:
+
+    typedef SparseBlock<NT> MT;
+
+    template<typename lmiclass>
+    static MT apply(int const& n, lmiclass &lmi) {
+
+        std::vector< std::pair<int, int> > blck_limits = lmi.get_limits_of_blocks();
+        int num_blocks = lmi.get_number_of_blocks(), m;
+
+        typedef Eigen::Triplet<NT> T;
+        std::vector<T> tripletList;
+        typedef Eigen::SparseMatrix<NT> SMT;
+
+        std::vector<SMT> block_matrices;
+
+        for (int i = 0; i < num_blocks; i++) {
+            tripletList.clear();
+            std::pair<int, int> _lim = blck_limits[i];
+            m = _lim.second - _lim.first + 1;
+            for (int j=0; j<m; j++) 
+            {
+                tripletList.push_back(T(j, j, 1.0));
+            }
+            SMT A(n, n);
+            A.setFromTriplets(tripletList.begin(), tripletList.end());
+            block_matrices.push_back(A);
+        }
+        MT B(block_matrices);
+        return B;
+    }
+
+};
+
+
 template<typename NT, typename MT, typename VT, typename Spectra, typename LMI, typename Point>
 void get_inner_point(LMI lmi, Point &p, Point const& obj) {
 
     int m = lmi.sizeOfMatrices();
-    typedef Eigen::Triplet<NT> T;
+    /*typedef Eigen::Triplet<NT> T;
     std::vector<T> tripletList;
     std::cout << "hi1"<<std::endl;
 
@@ -35,8 +113,10 @@ void get_inner_point(LMI lmi, Point &p, Point const& obj) {
     MT A(m,m);
     A.setFromTriplets(tripletList.begin(), tripletList.end());
     std::cout << "hi2.5"<<std::endl;
-    lmi.add_matrix(A);
+    lmi.add_matrix(A);*/
     std::cout << "hi3"<<std::endl;
+    MT A = set_to_identity<MT>::template apply(m, lmi);
+    lmi.add_matrix(A);
     int d = lmi.dimension();
 
     Spectra spectrahedro(lmi);
@@ -45,9 +125,10 @@ void get_inner_point(LMI lmi, Point &p, Point const& obj) {
     Point q(d), sol(d), objectii(d);
     objectii.set_coord(d-1, -1.0);
 
-    Eigen::SelfAdjointEigenSolver<MT> solver;
-    solver.compute(lmi.getMatrices()[0], Eigen::EigenvaluesOnly);
-    NT lambda = -solver.eigenvalues().maxCoeff();
+    //Eigen::SelfAdjointEigenSolver<MT> solver;
+    //solver.compute(lmi.getMatrices()[0], Eigen::EigenvaluesOnly);
+    //NT lambda = -solver.eigenvalues().maxCoeff();
+    NT lambda = -10000.0;
     std::cout << "hi4"<<std::endl;
     lambda *= 1.05;
     std::cout << "lambda = "<<lambda<<std::endl;

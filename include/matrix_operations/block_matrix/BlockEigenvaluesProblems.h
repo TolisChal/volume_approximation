@@ -64,7 +64,7 @@ public:
     /// Find the smallest eigenvalue of M
     /// \param M a symmetric matrix
     /// \return smallest eigenvalue
-    NT findSymEigenvalue(MT const & M) {
+    NT findSymEigenvalue(MT &M) {
         BlockMatrixMult<NT> _M(&M);
 
 //#define NOT_WORKING
@@ -129,7 +129,7 @@ public:
     /// \param[in] A Input matrix
     /// \param[in] B Input matrix
     /// \return The pair (minimum positive, maximum negative) of eigenvalues
-    NTpair symGeneralizedProblem(MT const & A, MT const & B) {
+    NTpair symGeneralizedProblem(MT &A, MT &B) {
 
         int matrixDim = A.rows();
         double lambdaMinPositive, lambdaMaxNegative;
@@ -137,8 +137,8 @@ public:
         #if defined(ARPACK_EIGENVALUES_SOLVER)
         
 
-        MT _B = -1.0 * B;
-        BlockMatrixGenEig<NT> _M(&_B, &A);
+        //fix MT _B = B * (-1.0);
+        BlockMatrixGenEig<NT> _M(&B, &A);
 
         // Creating an eigenvalue problem and defining what we need:
         // the  eigenvector of A with largest real.
@@ -247,7 +247,7 @@ public:
     /// \param[in] B Input matrix
     /// \param[out] eigenvector The eigenvector corresponding to the minimum positive eigenvalue
     /// \return The minimum positive eigenvalue
-    NT minPosGeneralizedEigenvalue(MT const & A, MT const & B, MT const& C, CVT& eigenvector) {
+    NT minPosGeneralizedEigenvalue(MT &A, MT &B, MT &C, CVT& eigenvector) {
         NT lambdaMinPositive = std::numeric_limits<NT>::max();
 
 #if defined(EIGEN_EIGENVALUES_SOLVER)
@@ -421,7 +421,7 @@ public:
     /// \param[in, out] updateOnly True if X,Y were previously computed and only B,C changed
     /// \return Minimum positive eigenvalue
     NT
-    minPosQuadraticEigenvalue(MT const & A, MT const &B, MT const &C, VT &eigenvector) 
+    minPosQuadraticEigenvalue(MT &A, MT &B, MT &C, VT &eigenvector) 
     {
         // perform linearization and create generalized eigenvalue problem X+lY
         //linearization(A, B, C, X, Y, updateOnly);

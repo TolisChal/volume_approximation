@@ -22,7 +22,9 @@ public:
     typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
 
     /// The matrix
-    MT const * M;
+    MT *M;
+
+    VT r;
 
     /// number of columns
     int n;
@@ -49,7 +51,8 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        (*M).multiply(_v, _w);
+        (*M).multiply(_v, r);
+        _w = r;
 
         //_w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
@@ -62,7 +65,8 @@ public:
         Eigen::Map<const VT> _v(v, m);
         Eigen::Map<VT> _w(w, m);
 
-        (*M).multiply(_v, _w);
+        (*M).multiply(_v, r);
+        _w = r;
 
         //_w.noalias() = (*M).template selfadjointView< Eigen::Lower >() * _v;
     }
@@ -70,10 +74,11 @@ public:
 
     /// Constructs an object
     /// \param[in] M An Eigen Matrix
-    BlockMatrixMult(MT const * M) {
+    BlockMatrixMult(MT *M) {
         this->M = M;
         n = M->cols();
         m = M->rows();
+        r.setZero(m);
     }
 
 };

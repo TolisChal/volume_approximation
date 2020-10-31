@@ -30,25 +30,25 @@ public:
     int _cols;
 
     /// Pointer to matrix A
-    MT const *A;
+    MT *A;
     /// Pointer to matrix B
-    MT const *B;
+    MT *B;
     /// Pointer to matrix C
-    MT const *C;
+    MT *C;
 
-    VT v;
+    VT v, r;
 
     int m;
 
     /// The LU decomposition of B
     //lu_decomposition Blu;
-    decompositioner<NT> takis;
+    decompositioner<MT> takis;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
     ///
     /// \param[in] A The matrix A
     /// \param[in] B The matrix B
-    BlockMatrixQuadEig(MT const *A, MT const *B, MT const *C) : A(A), B(B), C(C) {
+    BlockMatrixQuadEig(MT *_A, MT *_B, MT *_C) : A(_A), B(_B), C(_C) {
         //Blu.compute(*B);
         
         _rows = 2*(A->rows());
@@ -61,9 +61,10 @@ public:
 
         m = _cols / 2;
         //llt.compute(*C);
-        takis.compute_dense_cholesky(*C);
+        takis.compute_dense_cholesky((*C)*(-1.0));
 
         v.setZero(_rows);
+        r.setZero(_rows);
     }
 
     ///Required by Spectra
@@ -91,7 +92,8 @@ public:
         
         v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
 
-        (*A).multiply(x.block(0, 0, m, 1), v.block(0, 0, m, 1));
+        (*A).multiply(x.block(0, 0, m, 1), r);
+        v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
 
         Eigen::Map<VT> y(y_out, _rows);
@@ -99,10 +101,12 @@ public:
 
         y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
 
-        (*B).multiply(y.block(0, 0, m, 1), v.block(0, 0, m, 1));
+        (*B).multiply(y.block(0, 0, m, 1), r);
+        v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
 
-        takis.solve_chol_dense_ls(v.block(0, 0, m, 1), y.block(m, 0, m, 1));
+        takis.solve_chol_dense_ls(v.block(0, 0, m, 1), r);
+        y.block(m, 0, m, 1) = -r;
         //y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
     }
 
@@ -118,7 +122,8 @@ public:
         Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
         v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
 
-        (*A).multiply(x.block(0, 0, m, 1), v.block(0, 0, m, 1));
+        (*A).multiply(x.block(0, 0, m, 1), r);
+        v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
 
         Eigen::Map<VT> y(y_out, _rows);
@@ -126,10 +131,12 @@ public:
 
         y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
 
-        (*B).multiply(y.block(0, 0, m, 1), v.block(0, 0, m, 1));
+        (*B).multiply(y.block(0, 0, m, 1), r);
+        v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
 
-        takis.solve_chol_dense_ls(v.block(0, 0, m, 1), y.block(m, 0, m, 1));
+        takis.solve_chol_dense_ls(v.block(0, 0, m, 1), r);
+        y.block(m, 0, m, 1) = -r;
         //y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
        
     }
