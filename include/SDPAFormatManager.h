@@ -666,10 +666,12 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
     // entries are of the form
     // <matno> <blkno> <i> <j> <entry>
     tripletList.clear();
-    SMT smatrix(matrixDim, matrixDim);
-    int current_mat = 0, current_block = 1;
+    
+    int current_mat = 0, current_block = 1, num_of_blocks = blockSizes.size();
     matrixDim = blockSizes[0];
+    SMT smatrix(matrixDim, matrixDim);
     MT A;
+    std::cout<<"matrixDim = "<<matrixDim<<std::endl;
     while (!std::getline(is, line, '\n').eof()) {
         std::vector<NT> t = readVector3(line);
         //std::cout<<"t = "<<std::endl;
@@ -679,7 +681,7 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
         //std::cout<<"\n";
         std::cout<<"current_mat = "<<current_mat<<std::endl;
         std::cout<<"current_block = "<<current_block<<std::endl;
-        if (t[1] != current_block) {
+        if (t[1] != current_block || t[0] != current_mat) {
             smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
             sparse_matrices.push_back(smatrix);
             //smatrix = smatrix.pruned(ref);
@@ -689,16 +691,51 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
             tripletList.clear();
             
             if (t[0] > current_mat) {
+                std::cout<<"block matrix is ready"<<std::endl;
+                if (current_block < num_of_blocks) {
+                    std::cout<<"add the rest zero blocks"<<std::endl;
+                    for (int ii = current_block; ii<num_of_blocks; ii++){
+                        matrixDim = blockSizes[ii];
+                        smatrix = SMT(matrixDim, matrixDim);
+                        std::cout<<"matrix to add = "<<std::endl;
+                        std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+                        sparse_matrices.push_back(smatrix);
+                    }
+                }
+                std::cout<<"initialize block matrix"<<std::endl;
                 A = MT(sparse_matrices);
                 matrices.push_back(A);
                 sparse_matrices.clear();
                 current_mat++;
-                current_block = 1;
+                current_block = t[1];
+                if (current_block > 1) {
+                    std::cout<<"add first zero blocks"<<std::endl;
+                    for(int jj = 1; jj<current_block; jj++){
+                        std::cout<<"block = "<<jj<<std::endl;
+                        matrixDim = blockSizes[jj - 1];
+                        smatrix = SMT(matrixDim, matrixDim);
+                        std::cout<<"matrix to add = "<<std::endl;
+                        std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+                        sparse_matrices.push_back(smatrix);
+                    }
+                }
             } else {
-                current_block++;
+                if (t[1] - current_block > 1) {
+                    std::cout<<"add intermediate zero blocks"<<std::endl;
+                    for(int jj = current_block+1; jj<t[1]; jj++){
+                        std::cout<<"block = "<<jj<<std::endl;
+                        matrixDim = blockSizes[jj - 1];
+                        smatrix = SMT(matrixDim, matrixDim);
+                        std::cout<<"matrix to add = "<<std::endl;
+                        std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+                        sparse_matrices.push_back(smatrix);
+                    }
+                }
+                current_block = t[1];
             }
             matrixDim = blockSizes[current_block - 1];
             smatrix = SMT(matrixDim, matrixDim);
+            std::cout<<"matrixDim = "<<matrixDim<<std::endl;
         }
 //            std::cout << line << "\n";
         //int blockOffset = 0;

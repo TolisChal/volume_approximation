@@ -30,15 +30,19 @@ public:
     {
         typename std::vector<MT>::iterator iter = _blocks.begin();
         int r_start = 0, r_end;
-        dimension = 0;
+        dimension = 0, num_of_blocks = 0;
         for (; iter != _blocks.end(); iter++) 
         {
+            std::cout<<"block = \n"<<Eigen::MatrixXd((*iter))<<std::endl;
             dimension += (*iter).rows();
             r_end = (*iter).rows() - 1 + r_start;
+            std::cout<<"r_start = "<<r_start<<", r_end = "<<r_end<<std::endl;
             block_limits.push_back(std::pair<int, int>(r_start, r_end));
             r_start = r_end + 1;
             num_of_blocks++;
         }
+        std::cout<<"dimension = "<<dimension<<std::endl;
+        std::cout<<"num_of_blocks = "<<num_of_blocks<<std::endl;
     }
 
     void multiply(VT const& vec, VT &res)

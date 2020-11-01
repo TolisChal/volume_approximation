@@ -87,7 +87,7 @@ public:
             {
                 tripletList.push_back(T(j, j, 1.0));
             }
-            SMT A(n, n);
+            SMT A(m, m);
             A.setFromTriplets(tripletList.begin(), tripletList.end());
             block_matrices.push_back(A);
         }
@@ -118,6 +118,8 @@ void get_inner_point(LMI lmi, Point &p, Point const& obj) {
     MT A = set_to_identity<MT>::template apply(m, lmi);
     lmi.add_matrix(A);
     int d = lmi.dimension();
+    std::cout << "d = "<<d<<std::endl;
+    exit(-1);
 
     Spectra spectrahedro(lmi);
     SimulatedAnnealingSettings<Point> settings(0.1, 1, -1, 0.25);
