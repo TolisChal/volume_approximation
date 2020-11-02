@@ -21,6 +21,8 @@
 #include "Eigen/Eigen"
 #include "cartesian_geom/cartesian_kernel.h"
 #include "convex_bodies/spectrahedra/spectrahedron.h"
+#include "matrix_operations/block_matrix/block_sparse_matrix.hpp"
+#include "matrix_operations/block_matrix/SpectrahedronBlock.h"
 #include "SDPAFormatManager.h"
 #include "optimization/simulated_annealing.hpp"
 
