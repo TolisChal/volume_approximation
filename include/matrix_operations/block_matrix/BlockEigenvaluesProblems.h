@@ -93,7 +93,7 @@ public:
         // retrieve eigenvalue of the original system
         return dprob.EigenvalueReal(0);
 #elif defined(SPECTRA_ONLY_FOR_SYMEIG)
-        std::cout << "findSymEigenvalue Spectra\n";
+        //std::cout << "findSymEigenvalue Spectra\n";
         // This parameter is for Spectra. It must be larger than #(requested eigenvalues) + 2
         // and smaller than the size of matrix;
         int ncv = M.cols()/10 + 5;
@@ -332,6 +332,7 @@ public:
         //std::cout<<"tol_ = "<<tol_<<std::endl;
         ARNonSymStdEig<NT, BlockMatrixQuadEig<NT> >dprob((2*A.cols()), 1, &M, &BlockMatrixQuadEig<NT>::MultMv, 
                                                          std::string ("LR"), ((2*A.cols()))<250 ? 8 : 6, TOL);//, 150);
+        //std::cout<<"eigenvalue computed"<<std::endl;
 
         // compute        
         if (dprob.FindEigenvectors() == 0) {
@@ -348,7 +349,7 @@ public:
 
 
         // allocate memory for the eigenvector here
-        eigenvector.setZero(2*A.rows());
+        //eigenvector.setZero(2*A.rows());
 
         if (!dprob.EigenvaluesFound()) {
             // if failed to find eigenvalues
@@ -364,6 +365,7 @@ public:
             for (int i=0 ;i<(2*A.rows()) ; i++)
                 eigenvector(i) = dprob.EigenvectorReal(0, i);
         }
+        //std::cout << "lambdaMinPositive = " <<lambdaMinPositive<<std::endl;
 
 
 #endif
@@ -448,6 +450,7 @@ public:
             eigenvector(i) =  eivector(matrixDim + i);
 #endif
 
+        //std::cout << "AFTER lambdaMinPositive = " <<lambdaMinPositive<<std::endl;
         return lambdaMinPositive;
     }
 };

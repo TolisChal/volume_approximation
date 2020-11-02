@@ -23,6 +23,7 @@ public:
     typedef SparseBlock<NT> MT;
     /// Eigen vector type
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
+    typedef Eigen::SparseMatrix<NT> SMT;
 
     /// The number of rows
     int _rows;
@@ -42,6 +43,7 @@ public:
 
     /// The LU decomposition of B
     //lu_decomposition Blu;
+    typedef Eigen::SimplicialLDLT<SMT, Eigen::Lower> Decomposition;
     decompositioner<MT> takis;
 
     /// Constructs an object of this class and computes the LU decomposition of B.
@@ -64,7 +66,7 @@ public:
         takis.compute_dense_cholesky((*C)*(-1.0));
 
         v.setZero(_rows);
-        r.setZero(_rows);
+        r.setZero(m);
     }
 
     ///Required by Spectra
@@ -91,7 +93,6 @@ public:
         Eigen::Map<const VT> x(x_in, _cols);
         
         v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
-
         (*A).multiply(x.block(0, 0, m, 1), r);
         v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
@@ -99,14 +100,13 @@ public:
         Eigen::Map<VT> y(y_out, _rows);
         //y.noalias() = Blu.solve(-v);
 
-        y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
-
+        y.block(0, 0, m, 1) = v.block(m, 0, m, 1);
         (*B).multiply(y.block(0, 0, m, 1), r);
-        v.block(0, 0, m, 1) = r;
+        v.block(0, 0, m, 1) += r;
         //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
 
         takis.solve_chol_dense_ls(v.block(0, 0, m, 1), r);
-        y.block(m, 0, m, 1) = -r;
+        y.block(m, 0, m, 1) = r;
         //y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
     }
 
@@ -120,8 +120,8 @@ public:
         // Declaring the vectors like this, we don't copy the values of x_in to v
         // and next of y to y_out
         Eigen::Map<const VT> x(const_cast<double*>(x_in), _rows);
-        v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
 
+        v.block(m, 0, m, 1) = x.block(m, 0, m, 1);
         (*A).multiply(x.block(0, 0, m, 1), r);
         v.block(0, 0, m, 1) = r;
         //v.block(0, 0, m, 1).noalias() = (*A).template selfadjointView< Eigen::Lower >() * x.block(0, 0, m, 1);
@@ -129,15 +129,16 @@ public:
         Eigen::Map<VT> y(y_out, _rows);
         //y.noalias() = Blu.solve(-v);
 
-        y.block(0, 0, m, 1) = -v.block(m, 0, m, 1);
-
+        y.block(0, 0, m, 1) = v.block(m, 0, m, 1);
         (*B).multiply(y.block(0, 0, m, 1), r);
-        v.block(0, 0, m, 1) = r;
+        v.block(0, 0, m, 1) += r;
         //v.block(0, 0, m, 1).noalias() += (*B).template selfadjointView< Eigen::Lower >() * y.block(0, 0, m, 1);
 
         takis.solve_chol_dense_ls(v.block(0, 0, m, 1), r);
-        y.block(m, 0, m, 1) = -r;
+        y.block(m, 0, m, 1) = r;
         //y.block(m, 0, m, 1).noalias() = llt.solve(v.block(0, 0, m, 1));
+
+        
        
     }
 };

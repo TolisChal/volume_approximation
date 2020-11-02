@@ -234,7 +234,7 @@ public:
                 T -= lambda;
 
                 // update matrix C
-                precomputedValues.C += (lambda * lambda) * precomputedValues.A + lambda * precomputedValues.B;
+                precomputedValues.C +=  precomputedValues.A *(lambda * lambda) + precomputedValues.B * lambda;
 
                 // Set v to have the direction of the trajectory at t = lambda
                 // i.e. the gradient of at^2 + vt + p, for t = lambda
@@ -654,6 +654,7 @@ public:
 
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
+                //std::cout<<"computing positive intersection"<<std::endl;
                 NT lambda = spectrahedron.positiveIntersection(a, v, p, precomputedValues);
 
                 // We just solved a quadratic polynomial eigenvalue system At^2 + Bt + C,
@@ -671,6 +672,7 @@ public:
 
                 // if we can walk the remaining distance without reaching he boundary
                 if (T <= lambda) {
+                    //std::cout<<"T <= lambda"<<std::endl;
                     // set the new point p:= (T^2)*a + T*V + p
                     p += (T * T) * a + T * v;
 
@@ -691,6 +693,7 @@ public:
                 T -= lambda;
 
                 // update matrix C
+                //std::cout<<" update matrix C"<<std::endl;
                 precomputedValues.C += (precomputedValues.A * (lambda * lambda)) + (precomputedValues.B * lambda);
 
                 // Set v to have the direction of the trajectory at t = lambda
@@ -699,8 +702,10 @@ public:
 
                 // compute reflected direction
                 VT reflectedTrajectory;
+                //std::cout<<" compute reflection"<<std::endl;
                 spectrahedron.computeReflection(p, v, reflectedTrajectory, precomputedValues);
                 v = reflectedTrajectory;
+                //std::cout<<"reflection computed"<<std::endl;
             }
 
             // if the #reflections exceeded the limit, don't move

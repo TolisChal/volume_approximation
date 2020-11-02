@@ -227,7 +227,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     //std::cout << "Hi"<<std::endl;
     VT best_point(spectrahedron.dimension());
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
-                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point);
+                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point)*10;
     //interiorPoint = Point(best_point);
     std::cout << "final diameter = "<<diameter<<std::endl;
     std::cout<<"is p Exterior = "<<spectrahedron.isExterior(best_point)<<std::endl;
@@ -248,7 +248,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
 
     // initialize random walk;
     RNGType rng(spectrahedron.dimension());
-    temperature = 5600.0;
+    //temperature = 5600.0;
     typename HMC::Settings hmc_settings = typename HMC::Settings(settings.walkLength, rng, 
                                                                  objectiveFunctionNormed, 
                                                                  temperature, diameter);

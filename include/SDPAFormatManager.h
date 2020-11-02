@@ -764,9 +764,20 @@ void loadBlockSparseSDPAFormatFile(std::istream &is, LMII &lmi, VT &objectiveFun
     std::cout<<"current_mat = "<<current_mat<<std::endl;
     smatrix.setFromTriplets(tripletList.begin(), tripletList.end());
     sparse_matrices.push_back(smatrix);
-    std::cout<<"variablesNum = "<<variablesNum<<std::endl;
+    
+    if (current_block < num_of_blocks) {
+        std::cout<<"add the rest zero blocks"<<std::endl;
+        for (int ii = current_block; ii<num_of_blocks; ii++){
+            matrixDim = blockSizes[ii];
+            smatrix = SMT(matrixDim, matrixDim);
+            std::cout<<"matrix to add = "<<std::endl;
+            std::cout<<Eigen::MatrixXd(smatrix)<<"\n"<<std::endl;
+            sparse_matrices.push_back(smatrix);
+        }
+    }
     A = MT(sparse_matrices);
     matrices.push_back(A);
+    std::cout<<"variablesNum = "<<variablesNum<<std::endl;
             //smatrix = smatrix.pruned(ref);
     //matrices[variablesNum] = smatrix;
     

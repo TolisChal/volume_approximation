@@ -72,6 +72,7 @@ public:
 
         std::vector< std::pair<int, int> > blck_limits = lmi.get_limits_of_blocks();
         int num_blocks = lmi.get_number_of_blocks(), m;
+        std::cout<<"number of blocks to set identity = "<<num_blocks<<std::endl;
 
         typedef Eigen::Triplet<NT> T;
         std::vector<T> tripletList;
@@ -119,7 +120,7 @@ void get_inner_point(LMI lmi, Point &p, Point const& obj) {
     lmi.add_matrix(A);
     int d = lmi.dimension();
     std::cout << "d = "<<d<<std::endl;
-    exit(-1);
+    //exit(-1);
 
     Spectra spectrahedro(lmi);
     SimulatedAnnealingSettings<Point> settings(0.1, 1, -1, 0.25);
@@ -182,9 +183,12 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
                                                       interiorPoint, rng2, _objectiveFunctionNormed, best_point);
     std::cout << "initial diameter = "<<diameter<<std::endl;
+    std::cout << "isExterior, best_point = "<<spectrahedron.isExterior(best_point)<<std::endl;
+    //exit(-1);
 
     /******** initialization *********/
     solution = Point(best_point);
+    solution = interiorPoint;
     // the minimum till last iteration
     NT currentMin = objectiveFunction.dot(solution);
     int stepsCount = 0;
@@ -233,6 +237,7 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
                 hmcPrecomputedValues.resetFlags();
             }
             else {
+                if (verbose) std::cout << "Sampled point inside.\n";
                 // update values;
                 temp_point = randPoints.back();
                 randPoints.clear();

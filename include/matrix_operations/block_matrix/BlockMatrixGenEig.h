@@ -46,7 +46,7 @@ public:
     /// \param[in] B The matrix B
     BlockMatrixGenEig(MT *_A, MT *_B) : A(_A), B(_B) {
         //Blu.compute(*B);
-        takis.compute_dense_cholesky(*B);
+        takis.compute_dense_cholesky((*B)*(-1.0));
         _rows = A->rows();
         _cols = B->cols();
         v.setZero(_rows);

@@ -314,7 +314,7 @@ public:
             }
 
             q = p + diff * v;
-            if (this->isExterior(p)==1) {
+            if (this->isExterior(q)==1) {
                 continue;
             }
             p=q;
@@ -392,7 +392,7 @@ public:
             // update the precomputedValues, so we can skip
             // computations in the next call
             precomputedValues.computed_A = true;
-            precomputedValues.A += diff * *(this->getLMI().getMatrix(coordinate));
+            precomputedValues.A +=  (*(this->getLMI().getMatrix(coordinate))) * diff;
             randPoints.push_back(Point(p));
         }
 

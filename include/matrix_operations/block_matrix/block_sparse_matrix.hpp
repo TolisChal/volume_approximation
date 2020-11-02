@@ -17,6 +17,7 @@ public:
     typedef Eigen::Matrix<NT, Eigen::Dynamic, 1> VT;
     /// The type for Dense Eigen Matrix
     typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> DMT;
+    typedef Eigen::SparseMatrix<NT> SMT;
 
     std::vector<MT> blocks;
     std::vector< std::pair<int, int> > block_limits;
@@ -127,7 +128,12 @@ public:
         typename std::vector<MT>::iterator iter_mat = blocks.begin();
         for (;  iter_mat != blocks.end(); iter_mat++) 
         {
+            //std::cout<<"k = "<<k<<std::endl;
+            //std::cout<<"(*iter_mat) = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter_mat))<<"\n"<<std::endl;
             (*iter_mat) *= k;
+            //std::cout<<"[result mltiplication](*iter_mat) = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter_mat))<<"\n"<<std::endl;
         }
     }
 
@@ -152,7 +158,13 @@ public:
 
         for (;  iter_mat != blocks.end(); iter_mat++, counter++) 
         {
+            //std::cout<<"A.get_block(counter) = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd(A.get_block(counter))<<"\n"<<std::endl;
+            //std::cout<<"(*iter_mat) = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter_mat))<<"\n"<<std::endl;
             (*iter_mat) += A.get_block(counter);
+            //std::cout<<"[result addition](*iter_mat) = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter_mat))<<"\n"<<std::endl;
         }
     }
 
@@ -161,6 +173,36 @@ public:
         SparseBlock B = A;
         B += (*this);
         return B;
+    }
+
+    SMT get_full_matrix() {
+
+        SMT A(rows(), cols());
+        typename std::vector<MT>::iterator iter_mat = blocks.begin();
+        typename std::vector< std::pair<int, int> >::iterator iter_limits = block_limits.begin();
+        typedef Eigen::Triplet<NT> T;
+        std::vector<T> tripletList;
+        int length, length_prev = 0;
+        tripletList.clear();
+
+        for (;  iter_mat != blocks.end(); iter_mat++, iter_limits++) 
+        {
+            //std::cout<<"block = \n"<<std::endl;
+            //std::cout<<Eigen::MatrixXd((*iter_mat))<<std::endl;
+            //std::cout<<"offset = "<<length_prev<<std::endl;
+            for (int k=0; k<(*iter_mat).outerSize(); ++k)
+            {
+                for (typename SMT::InnerIterator it((*iter_mat), k); it; ++it)
+                {
+                    tripletList.push_back(T(it.row() + length_prev, it.col() + length_prev, it.value()));
+                }
+            }
+            length_prev += (*iter_limits).second - (*iter_limits).first + 1;
+        }
+        A.setFromTriplets(tripletList.begin(), tripletList.end());
+        //std::cout<<"A = \n"<<std::endl;
+        //std::cout<<Eigen::MatrixXd(A)<<"\n"<<std::endl;
+        return A;
     }
 
 };

@@ -129,7 +129,7 @@ class BlockLMI {
     /// \param[out] ret The normalized gradient of the determinant of the LMI at p
     void normalizedDeterminantGradient(const VT& p, const VT& e, VT& ret) {
         //ret.setZero(d);
-        VT temp_vec(d);
+        VT temp_vec(sizeOfMatrices());
         // i-th coordinate of the determinant is e^T * A_i * e
         for (int i = 0; i < d; i++) {
             // todo, use iterators
