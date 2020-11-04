@@ -213,6 +213,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
     //typedef BoltzmannHMCWalk::Walk<_Spectrahedron, RNGType > HMC;
     typedef typename WalkType::template Walk<_Spectrahedron, RNGType > HMC;
+    //typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> DMT;
 
     // the algorithm requires the objective function to be normalized
     // we will need to remember the norm
@@ -226,15 +227,17 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     std::cout << "diameter to compute"<<std::endl;
     VT best_point(spectrahedron.dimension());
     //NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(best_point, _objectiveFunctionNormed, spectrahedron, 
-    //                                                                         CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+                                                                             CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter = "<<diameter<<std::endl;
     //std::cout << "diaminteriorPointeter = "<<interiorPoint.getCoefficients().transpose()<<std::endl;
     //NT diameter2 = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter2 = "<<diameter2<<std::endl;
     RNGType rng2(spectrahedron.dimension());
     //std::cout << "Hi"<<std::endl;
+    Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> Sigma;
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
-                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point)*10;
+                                                     interiorPoint, rng2, _objectiveFunctionNormed, best_point, Sigma);
+    
     //interiorPoint = Point(best_point);
     std::cout << "final diameter = "<<diameter<<std::endl;
     std::cout<<"is p Exterior = "<<spectrahedron.isExterior(best_point)<<std::endl;

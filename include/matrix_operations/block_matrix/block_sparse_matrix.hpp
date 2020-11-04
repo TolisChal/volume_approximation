@@ -205,6 +205,17 @@ public:
         return A;
     }
 
+    void print()
+    {
+        typename std::vector<MT>::iterator iter_mat = blocks.begin();
+        int i=1;
+        for (;  iter_mat != blocks.end(); iter_mat++, i++) 
+        {
+            std::cout<<"block "<<i<<"-th ="<<std::endl;
+            std::cout<<Eigen::MatrixXd((*iter_mat))<<std::endl;
+        }
+    }
+
 };
 
 //template<typename NT>

@@ -160,6 +160,7 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
     typedef  typename _Spectrahedron::VECTOR_TYPE VT;
     typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
     typedef BoltzmannHMCWalk::Walk<_Spectrahedron, RNGType > HMC;
+    //typedef Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> DMT;
 
     // the algorithm requires the objective function to be normalized
     // we will need to remember the norm
@@ -180,8 +181,9 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
     RNGType rng2(spectrahedron.dimension());
     //std::cout << "Hi"<<std::endl;
     VT best_point(spectrahedron.dimension());
+    Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> Sigma;
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
-                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point);
+                                                      interiorPoint, rng2, _objectiveFunctionNormed, best_point, Sigma);
     std::cout << "initial diameter = "<<diameter<<std::endl;
     if (spectrahedron.isExterior(best_point)) {
         std::cout << "isExterior, best_point = "<<spectrahedron.isExterior(best_point)<<std::endl;

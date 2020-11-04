@@ -330,7 +330,7 @@ public:
     /// \param[in] numPoints The number of points to sample for the estimation
     /// \return An estimation of the diameter of the spectrahedron
     template<class Point, class RNGType>
-    NT estimateDiameterRDHR(int const numPoints, Point const & interiorPoint, RNGType &rng, VT const& c, VT &best_point) {
+    NT estimateDiameterRDHR(int const numPoints, Point const & interiorPoint, RNGType &rng, VT const& c, VT &best_point, Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic>  &Sigma) {
         //typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
 
         //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();

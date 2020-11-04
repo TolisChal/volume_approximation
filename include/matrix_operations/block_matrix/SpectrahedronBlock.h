@@ -23,6 +23,21 @@
     
 //};
 
+template <typename VT, typename DMT>
+void estimate_covariance(DMT const& samples, DMT &Sigma)
+{
+    int d = samples.rows(), N = samples.cols();
+    Sigma.resize(d, N);
+
+    VT mean1 = samples.block(0, 0, d, N).rowwise().mean();
+    //VT mean2 = samples.block(0, N1, d, N - N1).rowwise().mean();
+
+    DMT norm_chain1 = samples.block(0, 0, d, N).colwise() - mean1;
+    //MT norm_chain2 = samples.block(0, N1, d, N - N1).colwise() - mean2;
+
+    Sigma = (norm_chain1 * norm_chain1.transpose()) / (double(N) - 1.0);
+}
+
 
 template <typename NT>
 struct PrecomputedValues< SparseBlock<NT> > {
@@ -269,8 +284,8 @@ public:
     /// \tparam Point
     /// \param[in] numPoints The number of points to sample for the estimation
     /// \return An estimation of the diameter of the spectrahedron
-    template<class Point, class RNGType>
-    NT estimateDiameterRDHR(int const numPoints, Point const & interiorPoint, RNGType &rng, VT const& c, VT &best_point) {
+    template<class Point, class RNGType, typename DMTE>
+    NT estimateDiameterRDHR(int const numPoints, Point const & interiorPoint, RNGType &rng, VT const& c, VT &best_point, DMTE &Sigma) {
         //typedef BoostRandomNumberGenerator<boost::mt19937, NT> RNGType;
 
         //unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -292,6 +307,7 @@ public:
         // sample points with walk length set to 1
         int samplingNo=0;
         VT q;
+        DMTE samples(n, numPoints);
         while (samplingNo<numPoints) {
             // uniformly select a line parallel to an axis,
             // i.e. an indicator i s.t. x_i = 1
@@ -317,8 +333,8 @@ public:
             if (this->isExterior(q)==1) {
                 continue;
             }
-            p=q;
-
+            p = q;
+            samples.col(samplingNo) = p;
             // update the precomputedValues, so we can skip
             // computations in the next call
             precomputedValues.computed_C = true;
@@ -326,6 +342,8 @@ public:
             randPoints.push_back(Point(p));
             samplingNo++;
         }
+
+        estimate_covariance<VT>(samples, Sigma);
 
         // find maximum distance among points;
         

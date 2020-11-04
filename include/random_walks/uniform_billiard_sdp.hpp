@@ -459,13 +459,13 @@ public:
             // initialize
             RandomNumberGenerator &rng = settings.randomNumberGenerator;
             boost::random::uniform_real_distribution<> urdist(0, 1);
-            const NT dl = 0.8;// settings.dl;
+            const NT dl = settings.dl;
             unsigned int n = spectrahedron.dimension();
             int reflectionsNum = 0;
             int reflectionsNumBound = settings.reflectionsBound * n;
             VT previousPoint;
             VT p0 = p, xi, vi;
-            MT Ci;
+            MT Ci, C_prev;
             //std::cout<<"Hi30"<<std::endl;
             //std::cout<<"p0 = "<<p0.transpose()<<std::endl;
             //std::cout<<"is p0 Exterior = "<<spectrahedron.isExterior(p0)<<std::endl;
@@ -482,7 +482,7 @@ public:
             //VT a = -settings.c / (2 * settings.temperature);
 
             // The vector v will be a random a direction
-            VT v = GetDirection<Point>::apply(n, rng).getCoefficients();
+            VT v = GetDirection<Point>::apply(n, rng).getCoefficients(), p_prev = p;
             VT v0 = v;
             //std::cout<<"Hi3"<<std::endl;
             precomputedValues.computed_C = false;
@@ -494,11 +494,16 @@ public:
                 // we are at point p and the trajectory a*t^2 + vt + p
                 // find how long we can walk till we hit the boundary
                 //std::cout<<"is p Exterior = "<<spectrahedron.isExterior(p)<<std::endl;
-                //std::cout<<"p = "<<p.transpose()<<std::endl;
+                std::cout<<"v = "<<v.transpose()<<std::endl;
                 //std::cout<<"computing oracle boundary"<<std::endl;
                 NT lambda = spectrahedron.positiveIntersection(p, v, precomputedValues);
                 if (lambda <=0){
                     std::cout<<"lambda = "<<lambda<<std::endl;
+                    //p = p0;
+                    //v = GetDirection<Point>::apply(n, rng).getCoefficients();
+                    //precomputedValues.computed_C = false;
+                    //reflectionsNum = 0;
+                    //continue;
                     exit(-1);
                 }
                 //std::cout<<"lambda = "<<lambda<<std::endl;
@@ -553,6 +558,7 @@ public:
 
                 // save current and set new point
                 //previousPoint = p;
+                p_prev = p;
                 p += lambda * v;
 
                 // update remaining distance we must walk

@@ -189,6 +189,12 @@ public:
         std::cout<<"lBx = "<<(lambdaMinPositive*r).transpose()<<std::endl;
         A.multiply(eigvec, r);
         std::cout<<"-Ax = "<<-r.transpose()<<std::endl;
+        if (true) {
+            std::cout<<"A = \n";
+            A.print();
+            std::cout<<"\nB = \n";
+            B.print();
+        }
 
         //std::cout<<"lBx + Ax = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose() + (((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n"<<std::endl;
         //std::cout<<"Ax = "<<(((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
