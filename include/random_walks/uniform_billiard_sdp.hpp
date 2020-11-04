@@ -486,6 +486,7 @@ public:
             VT v0 = v;
             //std::cout<<"Hi3"<<std::endl;
             precomputedValues.computed_C = false;
+            reflectionsNumBound = 10;
 
             // Begin a step of the random walk
             // Also, count the reflections and respect the bound

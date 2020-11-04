@@ -70,6 +70,26 @@ struct GetPointOnDsphere
     }
 };
 
+template <typename Point>
+struct GetSpericalGaussian
+{
+    typedef typename Point::FT NT;
 
+    template <typename RandomNumberGenerator>
+    inline static Point apply(unsigned int const& dim,
+                              RandomNumberGenerator &rng)
+    {
+        Point p(dim);
+        NT* data = p.pointerToData();
+
+        for (unsigned int i=0; i<dim; ++i)
+        {
+            *data = rng.sample_ndist();
+            data++;
+        }
+
+        return p;
+    }
+};
 
 #endif // SPHERE_HPP

@@ -226,17 +226,17 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     // needed for the random walk and for the simulated annealing algorithm
     std::cout << "diameter to compute"<<std::endl;
     VT best_point(spectrahedron.dimension());
-    //NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(best_point, _objectiveFunctionNormed, spectrahedron, 
+    NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(best_point, _objectiveFunctionNormed, spectrahedron, 
                                                                              CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter = "<<diameter<<std::endl;
     //std::cout << "diaminteriorPointeter = "<<interiorPoint.getCoefficients().transpose()<<std::endl;
     //NT diameter2 = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter2 = "<<diameter2<<std::endl;
-    RNGType rng2(spectrahedron.dimension());
+    //RNGType rng2(spectrahedron.dimension());
     //std::cout << "Hi"<<std::endl;
-    Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> Sigma;
-    NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
-                                                     interiorPoint, rng2, _objectiveFunctionNormed, best_point, Sigma);
+    //Eigen::Matrix<NT, Eigen::Dynamic, Eigen::Dynamic> Sigma;
+    //NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
+                                                     //interiorPoint, rng2, _objectiveFunctionNormed, best_point, Sigma);
     
     //interiorPoint = Point(best_point);
     std::cout << "final diameter = "<<diameter<<std::endl;
@@ -269,6 +269,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     hmcPrecomputedValues.set_mat_size(spectrahedron.getLMI().sizeOfMatrices());
 
     NT previous_min = objectiveFunction.dot(solution);
+    std::cout<<"first obj val = "<<objectiveFunction.dot(interiorPoint)<<", best starting = "<<objectiveFunction.dot(solution)<<std::endl;
     std::cout << "Step: " << stepsCount << ", Temperature: " << temperature << ", Min: " << currentMin
                       << ", Relative error: " << std::abs(currentMin - optimal_val) / std::abs(optimal_val)
                       << ", optimal_val: " << optimal_val<< ", settings.error: " << settings.error<< "\n";
