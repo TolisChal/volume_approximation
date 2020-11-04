@@ -22,8 +22,8 @@
 /// \tparam Point
 /// \param[in] numPoints The number of points to sample for the estimation
 /// \return An estimation of the diameter of the spectrahedron
-template<typename MT, typename WalkType, typename NT, class RNGType, class Spectra, class Point>
-NT estimateDiameterBilliard(Spectra &spectrahedron, int const numPoints, Point const & interiorPoint) 
+template<typename MT, typename WalkType, typename NT, class RNGType, typename VT, class Spectra, class Point>
+NT estimateDiameterBilliard(VT &best_point, VT const& c, Spectra &spectrahedron, int const numPoints, Point const & interiorPoint) 
 {
     typedef typename WalkType::template Walk<Spectra, RNGType > BiW;
 
@@ -41,10 +41,16 @@ NT estimateDiameterBilliard(Spectra &spectrahedron, int const numPoints, Point c
     std::cout<<"Hi2"<<std::endl;
         
     // find maximum distance among points;
-    NT maxDistance = 0;
+    VT p = interiorPoint.getCoefficients();
+    NT maxDistance = 0, best_opt = c.dot(p);
     typename std::list<Point>::iterator itInner, itOuter = randPoints.begin();
 
     for (; itOuter!=randPoints.end() ; ++itOuter) {
+        NT temp_opt = c.dot((*itOuter).getCoefficients());
+        if (temp_opt < best_opt) {
+            best_opt = temp_opt;
+            best_point = (*itOuter).getCoefficients();
+        }
         for (itInner=itOuter ; itInner!=randPoints.end() ; ++itInner) {
             NT current = itOuter->distance(*itInner);
             if (current > maxDistance) {
@@ -218,14 +224,15 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
     // Estimate the diameter of the spectrahedron
     // needed for the random walk and for the simulated annealing algorithm
     std::cout << "diameter to compute"<<std::endl;
-    //NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(spectrahedron, CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
+    VT best_point(spectrahedron.dimension());
+    //NT diameter = estimateDiameterBilliard<MT, BilliardWalkSDP, NT, RNGType>(best_point, _objectiveFunctionNormed, spectrahedron, 
+    //                                                                         CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter = "<<diameter<<std::endl;
     //std::cout << "diaminteriorPointeter = "<<interiorPoint.getCoefficients().transpose()<<std::endl;
     //NT diameter2 = spectrahedron.estimateDiameter(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), interiorPoint);
     //std::cout << "diameter2 = "<<diameter2<<std::endl;
     RNGType rng2(spectrahedron.dimension());
     //std::cout << "Hi"<<std::endl;
-    VT best_point(spectrahedron.dimension());
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
                                                       interiorPoint, rng2, _objectiveFunctionNormed, best_point)*10;
     //interiorPoint = Point(best_point);
@@ -238,6 +245,7 @@ double solve_sdp_with_optimal(_Spectrahedron & spectrahedron, Point const & obje
 
     /******** initialization *********/
     solution = Point(best_point);
+    //solution = interiorPoint;
     // the minimum till last iteration
     NT currentMin = objectiveFunction.dot(solution);
     int stepsCount = 0;

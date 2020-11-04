@@ -81,7 +81,7 @@ public:
         Eigen::Map<VT> y(y_out, _rows);
         
         takis.solve_chol_dense_ls(v, r);
-        y = -r;
+        y = r;
         //y = Blu.solve(v);
     }
 
@@ -99,7 +99,7 @@ public:
 
         Eigen::Map<VT> y(y_out, _rows);
         takis.solve_chol_dense_ls(v, r);
-        y = -r;
+        y = r;
         //y = Blu.solve(v);
     }
 };

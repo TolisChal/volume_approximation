@@ -115,9 +115,9 @@ public:
     void operator= (SparseBlock const& A)
     {
         set_all_blocks(A.get_all_blocks());
-        set_block_limits( A.get_block_limits());
-        set_num_of_blocks( A.get_num_of_blocks());
-        set_dimension( A.get_dimension());
+        set_block_limits(A.get_block_limits());
+        set_num_of_blocks(A.get_num_of_blocks());
+        set_dimension(A.get_dimension());
         //this->blocks = A.get_all_blocks();
         //this->block_limits = A.get_block_limits();
         //this->num_of_blocks = A.get_num_of_blocks();

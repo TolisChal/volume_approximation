@@ -407,6 +407,7 @@ public:
 
                 // add the sample in the return list
                 points.push_back(Point(p));
+                precomputedValues.resetFlags();
             }
 
             // the data in preComputedValues may be out of date in the next call
@@ -437,11 +438,12 @@ public:
 
                 // add the sample in the return list
                 points.push_back(Point(p));
+                precomputedValues.resetFlags();
             }
 
             // the data in preComputedValues may be out of date in the next call
             precomputedValues.resetFlags();
-            precomputedValues.computed_C = true;
+            //precomputedValues.computed_C = true;
         }
 
 
@@ -457,7 +459,7 @@ public:
             // initialize
             RandomNumberGenerator &rng = settings.randomNumberGenerator;
             boost::random::uniform_real_distribution<> urdist(0, 1);
-            const NT dl = settings.dl;
+            const NT dl = 0.8;// settings.dl;
             unsigned int n = spectrahedron.dimension();
             int reflectionsNum = 0;
             int reflectionsNumBound = settings.reflectionsBound * n;
@@ -502,7 +504,10 @@ public:
                 //std::cout<<"lambda = "<<lambda<<std::endl;
                 lambda *= dl;
                 VT qq = p + lambda * v;
-                //std::cout<<"is pi + tvi Exterior = "<<spectrahedron.isExterior(qq)<<std::endl;
+                if (spectrahedron.isExterior(qq)){
+                    std::cout<<"is pi + tvi Exterior = "<<spectrahedron.isExterior(qq)<<std::endl;
+                    exit(-1);
+                }
                 t_temp = rng.sample_urdist() * lambda;
                 //w1 = T / (T + lambda);
                 w2 = lambda / (T + lambda);

@@ -129,6 +129,79 @@ public:
     /// \param[in] A Input matrix
     /// \param[in] B Input matrix
     /// \return The pair (minimum positive, maximum negative) of eigenvalues
+    NT minPosLinearEigenvalue(MT &A, MT &B, VT &eigvec) 
+    {
+        int matrixDim = A.rows();
+        double lambdaMinPositive;
+
+        //MT _A = -1.0 * A;
+        BlockMatrixGenEig<NT> _M(&B, &A);
+        
+        std::cout<<"calling arpack"<<std::endl; 
+        // Creating an eigenvalue problem and defining what we need:
+        // the  eigenvector of A with largest real.
+        ARNonSymStdEig<NT, BlockMatrixGenEig<NT> >
+        dprob(A.cols(), 1, &_M, &BlockMatrixGenEig<NT>::MultMv, std::string ("LR"), A.cols()<250 ? matrixDim-1 : 6);//, TOL/1000.0);//, 100*3);
+
+        VT eigvec2(matrixDim);
+        NT lambdaMinPositiveImg;
+        NT e = 0.00000000001;//000001;
+        if (dprob.FindEigenvectors() == 0) {
+            
+            std::cout<<"lambdaMinPositive failed"<<std::endl;
+            dprob.ChangeNcv(12);
+            dprob.ChangeMaxit(2*dprob.GetMaxit());
+            //dprob.ChangeTol(tol_*0.1);
+            if (dprob.FindEigenvectors() == 0) {
+                std::cout << "\tlambdaMinPositive Failed Again\n";
+            } else {
+                //std::cout<<"lambdaMinPositive computed"<<std::endl;
+                lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+                for (int i=0 ; i < matrixDim; i++) {
+                    if (std::abs(dprob.EigenvectorReal(0, i)) < e ) {
+                        eigvec(i) = 0.0;
+                    } else {
+                        eigvec(i) = dprob.EigenvectorReal(0, i);
+                    }
+                }
+                //std::cout<<"lambdaMinPositive = "<<lambdaMinPositive<<std::endl;
+            }
+            // if failed to find eigenvalues
+            //return {0.0, 0.0};
+        } else {
+            //std::cout<<"lambdaMinPositive computed"<<std::endl;
+            lambdaMinPositive = 1.0 / dprob.EigenvalueReal(0);
+            lambdaMinPositiveImg =  dprob.EigenvalueImag(0);
+            
+            for (int i=0 ; i < matrixDim; i++) {
+                if (std::abs(dprob.EigenvectorReal(0, i)) < e ) {
+                    eigvec(i) = 0.0;
+                } else {
+                    eigvec(i) = dprob.EigenvectorReal(0, i);
+                }
+                eigvec2(i) = dprob.EigenvectorImag(0, i);     
+            }
+        }
+        std::cout<<"lambdaMinPositiveImg = "<<lambdaMinPositiveImg<<std::endl;
+        std::cout<<"eigvec = "<<eigvec.transpose()<<"\n"<<std::endl;
+        VT r(matrixDim);
+        B.multiply(eigvec, r);
+        std::cout<<"lBx = "<<(lambdaMinPositive*r).transpose()<<std::endl;
+        A.multiply(eigvec, r);
+        std::cout<<"-Ax = "<<-r.transpose()<<std::endl;
+
+        //std::cout<<"lBx + Ax = "<<lambdaMinPositive*(B.template selfadjointView< Eigen::Lower >()*eigvec).transpose() + (((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n"<<std::endl;
+        //std::cout<<"Ax = "<<(((A).template selfadjointView< Eigen::Lower >()*eigvec).transpose())<<"\n\n"<<std::endl;
+    
+        return lambdaMinPositive;
+    }
+
+
+    /// Find the minimum positive and maximum negative eigenvalues of the generalized eigenvalue
+    /// problem A + lB, where A, B symmetric and A negative definite.
+    /// \param[in] A Input matrix
+    /// \param[in] B Input matrix
+    /// \return The pair (minimum positive, maximum negative) of eigenvalues
     NTpair symGeneralizedProblem(MT &A, MT &B) {
 
         int matrixDim = A.rows();

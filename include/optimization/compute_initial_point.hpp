@@ -183,12 +183,14 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
     NT diameter = spectrahedron.estimateDiameterRDHR(CONSTANT_1 + std::sqrt(spectrahedron.dimension()), 
                                                       interiorPoint, rng2, _objectiveFunctionNormed, best_point);
     std::cout << "initial diameter = "<<diameter<<std::endl;
-    std::cout << "isExterior, best_point = "<<spectrahedron.isExterior(best_point)<<std::endl;
-    //exit(-1);
+    if (spectrahedron.isExterior(best_point)) {
+        std::cout << "isExterior, best_point = "<<spectrahedron.isExterior(best_point)<<std::endl;
+        exit(-1);
+    }
 
     /******** initialization *********/
     solution = Point(best_point);
-    solution = interiorPoint;
+    //solution = interiorPoint;
     // the minimum till last iteration
     NT currentMin = objectiveFunction.dot(solution);
     int stepsCount = 0;
@@ -199,7 +201,7 @@ double solve_for_initial_point(_Spectrahedron & spectrahedron, Point const & obj
 
     // initialize random walk;
     RNGType rng(spectrahedron.dimension());
-    temperature = 5600.0;
+    //temperature = 5600.0;
     typename HMC::Settings hmc_settings = typename HMC::Settings(settings.walkLength, rng, objectiveFunctionNormed, temperature, diameter);
     HMC hmcRandomWalk = HMC(hmc_settings);
 
