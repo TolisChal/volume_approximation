@@ -18,9 +18,6 @@ def slow_fva(A, b, Aeq, beq):
     min_fluxes = []
     max_fluxes = []
 
-    min_objective = 0
-    max_objective = 0
-
     try:
 
         for i in range(int(A.shape[0]/2)):
