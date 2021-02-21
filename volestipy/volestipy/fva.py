@@ -28,7 +28,9 @@ def slow_fva(A, b, Aeq, beq):
 
             # If optimized
             if res.success:
-                min_fluxes.append(res.fun)
+                min_objective = res.fun
+                min_fluxes.append(min_objective)
+                
             
             # Set the minus of the ith row of the A matrix as the objective function
             objective_function = np.asarray([-x for x in objective_function])
@@ -36,7 +38,9 @@ def slow_fva(A, b, Aeq, beq):
 
             # If optimized
             if res.success:
-                max_fluxes.append(res.fun)
+                max_objective = -res.fun
+                max_fluxes.append(max_objective)
+                
             
             # Calculate the width
             width = abs(max_objective - min_objective)                  
@@ -127,9 +131,9 @@ def fast_fva(A, b, Aeq, beq):
                     status = model.status
                     if status == GRB.OPTIMAL:
 
-                    # Get the min objective value
-                    min_objective = model.getObjective().getValue()
-                    min_fluxes.append(min_objective)
+                        # Get the min objective value
+                        min_objective = model.getObjective().getValue()
+                        min_fluxes.append(min_objective)
 
                     # Likewise, for the maximum
                     objective_function = np.asarray([-x for x in objective_function])
@@ -141,9 +145,9 @@ def fast_fva(A, b, Aeq, beq):
                     status = model.status
                     if status == GRB.OPTIMAL:
 
-                    # Get the max objective value
-                    max_objective = -model.getObjective().getValue()
-                    max_fluxes.append(max_objective)
+                        # Get the max objective value
+                        max_objective = -model.getObjective().getValue()
+                        max_fluxes.append(max_objective)
 
                     # Calculate the width
                     width = abs(max_objective - min_objective)                  

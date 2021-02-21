@@ -31,7 +31,7 @@ if __name__ == "__main__":
    print("\n This is the vector beq: \n")
    print(beq)
 
-   res = pre_process(A, b, Aeq, beq)
+   res = slow_fva(A, b, Aeq, beq)
    print("new A is:")
    print(res[0])
    print("new b is:")

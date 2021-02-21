@@ -16,6 +16,9 @@ import scipy.sparse as sp
 import gurobipy as gp
 from gurobipy import GRB
 
+# import fva implementations
+from fva import slow_fva, fast_fva
+
 # For the read the json format BIGG files function
 import json
 import scipy.io
