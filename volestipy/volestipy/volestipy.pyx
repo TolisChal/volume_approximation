@@ -175,8 +175,8 @@ def pre_process(A, b, Aeq, beq):
    d = A.shape[1] ; m = Aeq.shape[0] ; n = Aeq.shape[1]
    Aeq_new = Aeq
    beq_new = beq
-   A_new = np.zeros((0,d))
-   b_new = []    # this need to be a vector; we do not know its length
+   #A_new = np.zeros((0,d))
+   #b_new = []    # this need to be a vector; we do not know its length
    
    min_fluxes = []
    max_fluxes = []
@@ -224,11 +224,11 @@ def pre_process(A, b, Aeq, beq):
 
             # Update the model with the extra constraints and then print it
             model.update()
-            model.display()
+            # model.display()
 
             # Loop through the lines of the A matrix, set objective function for each and run the model
-            for i in range(A.shape[0]):
-
+            for i in range(int(A.shape[0]/2)):
+            
                # Set the ith row of the A matrix as the objective function
                objective_function = A[i,]
 
@@ -237,17 +237,17 @@ def pre_process(A, b, Aeq, beq):
                model.update()
 
                # Optimize model
-               model.optimize ()
+               model.optimize()
 
                # If optimized
                status = model.status
                if status == GRB.OPTIMAL:
 
-                  # Get the max objective value
-                  max_objective = model.getObjective().getValue()
-                  max_fluxes.append(max_objective)
+                  # Get the min objective value
+                  min_objective = model.getObjective().getValue()
+                  min_fluxes.append(min_objective)
 
-               # Likewise, for the minimum
+               # Likewise, for the maximum
                objective_function = np.asarray([-x for x in objective_function])
                model.setMObjective(None, objective_function, 0.0, None, None, x, GRB.MINIMIZE)
                model.update()
@@ -258,45 +258,52 @@ def pre_process(A, b, Aeq, beq):
                if status == GRB.OPTIMAL:
 
                   # Get the max objective value
-                  min_objective = model.getObjective().getValue()
-                  min_fluxes.append(min_objective)
+                  max_objective = -model.getObjective().getValue()
+                  max_fluxes.append(max_objective)
 
                # Calculate the width
-               width = abs(max_objective + min_objective) / np.linalg.norm(A[i,])
+               # width = abs(max_objective + min_objective) / np.linalg.norm(A[i,])
+               width = abs(max_objective - min_objective)                  
 
                # Check whether we keep or not the equality
                if width < 1e-07:
                   Aeq_new = np.vstack((Aeq_new, A[i,]))
-                  beq_new = np.append(beq_new, max_objective)
+                  # beq_new = np.append(beq_new, max_objective)
+                  beq_new = np.append(beq_new, min(max_objective, min_objective))
 
-               else:
-                  A_new = np.vstack((A_new, A[i,]))
-                  b_new = np.append(b_new, b[i])
-
+               #else:
+                  #A_new = np.vstack((A_new, A[i,]))
+                  #b_new = np.append(b_new, b[i])
+                  #A_new = np.vstack((A_new, A[i+n,]))
+                  #b_new = np.append(b_new, b[i+n])                                    
+               
             # The np.vstack() creates issues on changing contiguous c orded of np arrays; here we fix this
             Aeq_new = np.ascontiguousarray(Aeq_new, dtype=np.dtype)
-            A_new = np.ascontiguousarray(A_new, dtype=np.dtype)
+            #A_new = np.ascontiguousarray(A_new, dtype=np.dtype)
 
             # Furthremore, we need to have float64 in all numpy arrays
             Aeq_new = Aeq_new.astype('float64')
-            A_new = A_new.astype('float64')
+            #A_new = A_new.astype('float64')
 
             # Make lists of fluxes numpy arrays
             min_fluxes = np.asarray(min_fluxes) ; max_fluxes = np.asarray(max_fluxes)
 
             # And now we export the pre-processed elements on .npy files to load and use them anytime
-            np.save('A_preprocessed.npy', A_new) ; np.save('b_preprocessed.npy', b_new)
-            np.save('Aeq_preprocessed.npy', Aeq_new) ; np.save('beq_preprocessed.npy', beq_new)
-            np.save('min_fluxes.npy', min_fluxes), np.save('max_fluxes.npy', max_fluxes)
+            #np.save('A_preprocessed.npy', A_new) ; np.save('b_preprocessed.npy', b_new)
+            #np.save('Aeq_preprocessed.npy', Aeq_new) ; np.save('beq_preprocessed.npy', beq_new)
+            #np.save('min_fluxes.npy', min_fluxes), np.save('max_fluxes.npy', max_fluxes)
             
             # Return a tupple including the new A, b, Aeq and beq
-            return A_new, b_new, Aeq_new, beq_new, min_fluxes, max_fluxes
+            # return A_new, b_new, Aeq_new, beq_new, min_fluxes, max_fluxes 
+            return A, b, Aeq_new, beq_new, min_fluxes, max_fluxes
+
 
    # Print error messages
    except gp . GurobiError as e :
       print ("Error code " + str( e . errno ) + ": " + str( e ))
    except AttributeError :
       print ("Encountered an attribute error ")
+
 
 # This is a function to get the maximum ball included in the full dimensional polytope
 def get_max_ball(A_full_dim, b_full_dim):
