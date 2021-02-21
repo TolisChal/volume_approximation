@@ -127,9 +127,9 @@ def fast_fva(A, b, Aeq, beq):
                     status = model.status
                     if status == GRB.OPTIMAL:
 
-                    # Get the min objective value
-                    min_objective = model.getObjective().getValue()
-                    min_fluxes.append(min_objective)
+                        # Get the min objective value
+                        min_objective = model.getObjective().getValue()
+                        min_fluxes.append(min_objective)
 
                     # Likewise, for the maximum
                     objective_function = np.asarray([-x for x in objective_function])
@@ -141,9 +141,9 @@ def fast_fva(A, b, Aeq, beq):
                     status = model.status
                     if status == GRB.OPTIMAL:
 
-                    # Get the max objective value
-                    max_objective = -model.getObjective().getValue()
-                    max_fluxes.append(max_objective)
+                        # Get the max objective value
+                        max_objective = -model.getObjective().getValue()
+                        max_fluxes.append(max_objective)
 
                     # Calculate the width
                     width = abs(max_objective - min_objective)                  
