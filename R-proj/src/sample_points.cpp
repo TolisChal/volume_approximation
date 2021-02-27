@@ -30,6 +30,7 @@ enum random_walks {
   cdhr,
   billiard,
   accelarated_billiard,
+  static_gbw,
   dikin_walk,
   vaidya_walk,
   john_walk,
@@ -126,6 +127,15 @@ void sample_from_polytope(Polytope &P, int type, RNGType &rng, PointList &randPo
             uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
         } else {
             uniform_sampling<AcceleratedBilliardWalk>(randPoints, P, rng, walkL, numpoints,
+                     StartingPoint, nburns);
+        }
+        break;
+    case static_gbw:
+        if(set_L) {
+            StaticBilliardWalk WalkType(L);
+            uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
+        } else {
+            uniform_sampling<StaticBilliardWalk>(randPoints, P, rng, walkL, numpoints,
                      StartingPoint, nburns);
         }
         break;
@@ -472,6 +482,14 @@ Rcpp::NumericMatrix sample_points(Rcpp::Nullable<Rcpp::Reference> P,
     } else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("aBiW")) == 0) {
         if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
         walk = accelarated_billiard;
+        if (Rcpp::as<Rcpp::List>(random_walk).containsElementNamed("L")) {
+            L = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(random_walk)["L"]);
+            set_L = true;
+            if (L <= 0.0) throw Rcpp::exception("L must be a postitive number!");
+        }
+    }  else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("SgBiW")) == 0) {
+        if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
+        walk = static_gbw;
         if (Rcpp::as<Rcpp::List>(random_walk).containsElementNamed("L")) {
             L = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(random_walk)["L"]);
             set_L = true;
