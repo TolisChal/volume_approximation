@@ -81,6 +81,7 @@ struct StaticBilliardWalk
                               : compute_diameter<GenericPolytope>
                                 ::template compute<NT>(P);
             _AA.noalias() = P.get_mat() * P.get_mat().transpose();
+            _A = P.get_mat();
             initialize(P, p, rng);
         }
 
@@ -107,7 +108,7 @@ struct StaticBilliardWalk
 
                 T = -std::log(rng.sample_urdist()) * _L;
                 _v = GetDirection<Point>::apply(n, rng, false);
-                compute_hessian(p, _A, P.get_vec(), Hes);
+                compute_hessian(_p, _A, P.get_vec(), Hes);
                 invHes = Hes.inverse();
                 Eigen::LLT<MT> lltOfA(invHes); // compute the Cholesky decomposition of A
                 MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
@@ -121,6 +122,27 @@ struct StaticBilliardWalk
                 if (T <= pbpair.first) {
                     _p += (T * _v);
                     _lambda_prev = T;
+
+                    
+                    NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
+                    logdetHx = 0.5*std::log(Hes.determinant());
+
+                    compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+
+                    NT VySVy = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
+                        logdetHy = 0.5*std::log(Hes.determinant());
+
+                    NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
+                    NT u_prog = std::log(rng.sample_urdist());
+
+                    if (u_prog > log_prob) {
+                        _p = p0;
+                        _Av = _Av_prev;
+                        _lambdas = _lambdas_prev;
+                        _lambda_prev = _lambda_prev0;
+                    }
+
+
                     continue;
                 }
 
@@ -130,7 +152,7 @@ struct StaticBilliardWalk
                 P.compute_reflection(_v, _p, _update_parameters);
                 it++;
 
-                while (it < 100*n)
+                while (it < 1000*n)
                 {
                     std::pair<NT, int> pbpair
                             = P.line_positive_intersect(_p, _v, _lambdas, _Av, _lambda_prev, _AA, _update_parameters);
@@ -145,7 +167,13 @@ struct StaticBilliardWalk
                     P.compute_reflection(_v, _p, _update_parameters);
                     it++;
                 }
-                if (it == 100*n) _p = p0;
+                /*if (it == 300*n){
+                     _p = p0;
+                    _Av = _Av_prev;
+                    _lambdas = _lambdas_prev;
+                    _lambda_prev = _lambda_prev0;
+                    continue;
+                }*/
 
                 NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
                     logdetHx = 0.5*std::log(Hes.determinant());
