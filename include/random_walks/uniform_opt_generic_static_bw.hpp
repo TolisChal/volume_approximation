@@ -66,10 +66,8 @@ struct StaticBilliardWalk
                 ::template compute<NT>(P);
             _AA.noalias() = P.get_mat() * P.get_mat().transpose();
             _A = P.get_mat();
+            _Atrans = _A.transpose();
             _b = P.get_vec();
-            //invHes.noalias() = P.get_mat().transpose() * P.get_mat();
-            //detH = invHes.determinant();
-            //invHes = invHes.inverse();
             Ws.setZero(_A.rows());
             initialize(P, p, rng);
         }
@@ -84,6 +82,7 @@ struct StaticBilliardWalk
                                 ::template compute<NT>(P);
             _AA.noalias() = P.get_mat() * P.get_mat().transpose();
             _A = P.get_mat();
+            _Atrans = _A.transpose();
             _b = P.get_vec();
             Ws.setZero(_A.rows());
             initialize(P, p, rng);
@@ -123,6 +122,7 @@ struct StaticBilliardWalk
                 it = 0;
                 std::pair<NT, int> pbpair = P.line_positive_intersect(_p, _v, _lambdas, _Av, _lambda_prev, 
                                                                       _update_parameters);
+                VxSVxOpt = -0.5*(_Av.square()).sum();
                 if (T <= pbpair.first) {
                     _p += (T * _v);
                     _lambda_prev = T;
@@ -132,7 +132,7 @@ struct StaticBilliardWalk
 
                     compute_Ws(_b, _A, Ws, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
-                    NT VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
+                    VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                         logdetHxOpt = 0.5*std::log(Hes.determinant());
 
                     NT VySVyOpt = -0.5*(_Av.square()).sum(); 
@@ -270,6 +270,7 @@ struct StaticBilliardWalk
             }
             compute_hessian(_p, _A, P.get_vec(), optHes);
             optInvHes = optHes.inverse();
+            logdetHx = optHes.determinant();
             lltOfInvHes_prev = Eigen::LLT<MT>(optInvHes);
             lltOfInvHes_next = Eigen::LLT<MT>(optInvHes);
         }
@@ -288,10 +289,10 @@ struct StaticBilliardWalk
             
         }
 
-        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas, VT const& Av, NT const& t) {
+        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas1, VT const& lambdas2, VT const& Av, NT const& t) {
 
-            VT p1 = (b - A*lambdas).square();
-            VT p2 = (b - A*(lambdas + t*Av)).square();
+            VT p1 = (b - lambdas1).square();
+            VT p2 = (b - (lambdas2 + t*Av)).square();
 
             Ws.noalias() = (p1-p2).cwiseProduct((p1.cwiseProduct(p2)).cwiseInverse());
 
@@ -302,13 +303,12 @@ struct StaticBilliardWalk
         Point _v;
         NT _lambda_prev, _lambda_prev0;
         MT _AA;
-        MT _A;
+        MT _A, _Atrans;
         MT invHes, optInvHes;
         MT Hes, optHes;
         VT _b, _Ws;
-        NT detH;
+        NT VxSVxOpt, VySVyOpt, logdetHxOpt, logdetHyOpt;
         Eigen::LLT<MT> lltOfInvHes_prev, lltOfInvHes_next;
-        std::vector<MT> RankOneMatrices;
         update_parameters _update_parameters;
         typename Point::Coeff _lambdas;
         typename Point::Coeff _Av;
