@@ -130,14 +130,15 @@ struct StaticBilliardWalk
                     NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
                     logdetHx = 0.5*std::log(Hes.determinant());
 
-                    compute_Ws(_b, _A, Ws, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
+                    compute_Ws(_b, _A, Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
                     VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                         logdetHxOpt = 0.5*std::log(Hes.determinant());
 
-                    NT VySVyOpt = -0.5*(_Av.square()).sum(); 
-                    //logdetHxOpt = 0.5*std::log(Hes.determinant());
-                    update_determinant();
+                    VySVyOpt = -0.5*(_Av.square()).sum(); 
+                    update_determinant_cholesky_inverse();
+                    logdetHyOpt = 0.5*std::log(Hes.determinant());
+                    
                     //compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
 
                     
