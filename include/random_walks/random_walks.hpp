@@ -21,6 +21,7 @@
 #include "random_walks/uniform_vaidya_walk.hpp"
 #include "random_walks/uniform_accelerated_billiard_walk.hpp"
 #include "uniform_generic_static_bw.hpp"
+#include "uniform_opt_generic_static_bw.hpp"
 #ifndef VOLESTIPY
     #include "random_walks/hamiltonian_monte_carlo_walk.hpp"
     #include "random_walks/langevin_walk.hpp"

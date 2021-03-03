@@ -13,13 +13,13 @@
 
 // Billiard walk which accelarates each step for uniform distribution
 
-struct StaticBilliardWalk
+struct StaticOptBilliardWalk
 {
-    StaticBilliardWalk(double L)
+    StaticOptBilliardWalk(double L)
             :   param(L, true)
     {}
 
-    StaticBilliardWalk()
+    StaticOptBilliardWalk()
             :   param(0, false)
     {}
 
@@ -68,7 +68,7 @@ struct StaticBilliardWalk
             _A = P.get_mat();
             _Atrans = _A.transpose();
             _b = P.get_vec();
-            Ws.setZero(_A.rows());
+            _Ws.setZero(_A.rows());
             initialize(P, p, rng);
         }
 
@@ -84,7 +84,7 @@ struct StaticBilliardWalk
             _A = P.get_mat();
             _Atrans = _A.transpose();
             _b = P.get_vec();
-            Ws.setZero(_A.rows());
+            _Ws.setZero(_A.rows());
             initialize(P, p, rng);
         }
 
@@ -111,37 +111,39 @@ struct StaticBilliardWalk
 
                 T = -std::log(rng.sample_urdist()) * _L;
                 _v = GetDirection<Point>::apply(n, rng, false);
-                compute_hessian(_p, _A, P.get_vec(), Hes);
-                invHes = Hes.inverse();
-                Eigen::LLT<MT> lltOfA(invHes); // compute the Cholesky decomposition of A
+                compute_hessian(_p, _A, P.get_vec(), _Hes);
+                _invHes = _Hes.inverse();
+                Eigen::LLT<MT> lltOfA(_invHes); // compute the Cholesky decomposition of A
                 //MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
-                _v = Point(lltOfInvHes_prev.matrixL() * _v.getCoefficients());
+                _v = Point(_lltOfInvHes_prev.matrixL() * _v.getCoefficients());
                 Point v0 = _v;
                 Point p0 = _p;
 
                 it = 0;
                 std::pair<NT, int> pbpair = P.line_positive_intersect(_p, _v, _lambdas, _Av, _lambda_prev, 
                                                                       _update_parameters);
-                _VxSVxOpt = -0.5*(_Av.square().cwiseProduct((_b - _lambdas).square().cwiseInverse())).sum();
+                _temp = _b - _lambdas;
+                _VxSVxOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_temp.cwiseProduct(_temp).cwiseInverse())).sum();
                 if (T <= pbpair.first) {
                     _p += (T * _v);
                     _lambda_prev = T;
 
-                    NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
-                    logdetHx = 0.5*std::log(Hes.determinant());
+                    NT VxSVx = -0.5*(v0.getCoefficients().dot(_Hes * v0.getCoefficients())), 
+                    logdetHx = 0.5*std::log(_Hes.determinant());
 
                     compute_Ws(_b, _A, _Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
                     //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                     //    logdetHxOpt = 0.5*std::log(Hes.determinant());
 
-                    _VySVyOpt = -0.5*(_Av.square().cwiseProduct(_Ws.cwiseInverse()).sum(); 
+                    _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_Ws.cwiseInverse())).sum(); 
                     update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
                     _logdetHyOpt *= 0.5;
                     
-                    //compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+                    compute_hessian(_p, P.get_mat(), P.get_vec(), _Hes);
 
-                    
+                    NT VySVy = -0.5 * (_v.getCoefficients().dot(_Hes * _v.getCoefficients())), 
+                        logdetHy = 0.5*std::log(_Hes.determinant());
 
                     NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
                     NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
@@ -192,21 +194,22 @@ struct StaticBilliardWalk
                     continue;
                 }*/
 
-                NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
-                    logdetHx = 0.5*std::log(Hes.determinant());
+                NT VxSVx = -0.5*(v0.getCoefficients().dot(_Hes * v0.getCoefficients())), 
+                    logdetHx = 0.5*std::log(_Hes.determinant());
 
                 compute_Ws(_b, _A, _Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
                 //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                 //    logdetHxOpt = 0.5*std::log(Hes.determinant());
 
-                _VySVyOpt = -0.5*(_Av.square().cwiseProduct(_Ws.cwiseInverse()).sum(); 
+                _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_Ws.cwiseInverse())).sum(); 
                 update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
                 _logdetHyOpt *= 0.5;
                     
-                //compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+                compute_hessian(_p, P.get_mat(), P.get_vec(), _Hes);
 
-                    
+                NT VySVy = -0.5 * (_v.getCoefficients().dot(_Hes * _v.getCoefficients())), 
+                    logdetHy = 0.5*std::log(_Hes.determinant());
 
                 NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
                 NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
@@ -249,9 +252,9 @@ struct StaticBilliardWalk
             _Av.setZero(P.num_of_hyperplanes());
             _p = p;
             _v = GetDirection<Point>::apply(n, rng, false);
-            compute_hessian(p, _A, P.get_vec(), Hes);
-            invHes = Hes.inverse();
-            Eigen::LLT<MT> lltOfA(invHes); // compute the Cholesky decomposition of A
+            compute_hessian(p, _A, P.get_vec(), _Hes);
+            _invHes = _Hes.inverse();
+            Eigen::LLT<MT> lltOfA(_invHes); // compute the Cholesky decomposition of A
             MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
             _v = Point(L * _v.getCoefficients());
 
@@ -291,7 +294,7 @@ struct StaticBilliardWalk
                 it++;
             }
             compute_hessian(_p, _A, P.get_vec(), _optHes);
-            _optInvHes = optHes.inverse();
+            _optInvHes = _optHes.inverse();
             _logdetHxOpt = 0.5 * std::log(_optHes.determinant());
             _lltOfInvHes_prev = Eigen::LLT<MT>(_optInvHes);
             _lltOfInvHes_next = Eigen::LLT<MT>(_optInvHes);
@@ -312,11 +315,13 @@ struct StaticBilliardWalk
             
         }
 
-        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas1, VT const& Av1, NT const& t1
+        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas1, VT const& Av1, NT const& t1,
                                VT const& lambdas2, VT const& Av, NT const& t) {
-
-            VT p1 = (b - (lambdas1 + t1*Av1)).square();
-            VT p2 = (b - (lambdas2 + t*Av)).square();
+            
+            _temp = b - (lambdas1 + t1*Av1);
+            VT p1 = _temp.cwiseProduct(_temp);
+            _temp = b - (lambdas2 + t*Av);
+            VT p2 = _temp.cwiseProduct(_temp);
 
             Ws.noalias() = (p1-p2).cwiseProduct((p1.cwiseProduct(p2)).cwiseInverse());
 
@@ -348,7 +353,7 @@ struct StaticBilliardWalk
         MT _A, _Atrans;
         MT _invHes, _optInvHes, _optInvHes_prev;
         MT _Hes, _optHes;
-        VT _b, _Ws;
+        VT _b, _Ws, _temp;
         NT _VxSVxOpt, _VySVyOpt, _logdetHxOpt, _logdetHyOpt;
         Eigen::LLT<MT> _lltOfInvHes_prev, _lltOfInvHes_next;
         update_parameters _update_parameters;
