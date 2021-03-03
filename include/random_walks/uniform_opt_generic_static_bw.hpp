@@ -122,7 +122,7 @@ struct StaticBilliardWalk
                 it = 0;
                 std::pair<NT, int> pbpair = P.line_positive_intersect(_p, _v, _lambdas, _Av, _lambda_prev, 
                                                                       _update_parameters);
-                VxSVxOpt = -0.5*(_Av.square()).sum();
+                _VxSVxOpt = -0.5*(_Av.square().cwiseProduct((_b - _lambdas).square().cwiseInverse())).sum();
                 if (T <= pbpair.first) {
                     _p += (T * _v);
                     _lambda_prev = T;
@@ -130,20 +130,21 @@ struct StaticBilliardWalk
                     NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
                     logdetHx = 0.5*std::log(Hes.determinant());
 
-                    compute_Ws(_b, _A, Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
+                    compute_Ws(_b, _A, _Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
-                    VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
-                        logdetHxOpt = 0.5*std::log(Hes.determinant());
+                    //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
+                    //    logdetHxOpt = 0.5*std::log(Hes.determinant());
 
-                    VySVyOpt = -0.5*(_Av.square()).sum(); 
-                    update_determinant_cholesky_inverse();
-                    logdetHyOpt = 0.5*std::log(Hes.determinant());
+                    _VySVyOpt = -0.5*(_Av.square().cwiseProduct(_Ws.cwiseInverse()).sum(); 
+                    update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
+                    _logdetHyOpt *= 0.5;
                     
                     //compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
 
                     
 
                     NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
+                    NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
                     NT u_prog = std::log(rng.sample_urdist());
 
                     if (u_prog > log_prob) {
@@ -151,6 +152,11 @@ struct StaticBilliardWalk
                         _Av = _Av_prev;
                         _lambdas = _lambdas_prev;
                         _lambda_prev = _lambda_prev0;
+                        _lltOfInvHes_next = _lltOfInvHes_prev;
+                        _logdetHyOpt = _logdetHxOpt;
+                    } else {
+                        _logdetHxOpt = _logdetHyOpt;
+                        _lltOfInvHes_prev = _lltOfInvHes_next;
                     }
 
 
@@ -189,12 +195,21 @@ struct StaticBilliardWalk
                 NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
                     logdetHx = 0.5*std::log(Hes.determinant());
 
-                compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+                compute_Ws(_b, _A, _Ws, _lambdas_prev, _Av_prev, _lambda_prev0, _lambdas, _Av, T);// P.get_mat(), P.get_vec(), Hes);
 
-                NT VySVy = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
-                    logdetHy = 0.5*std::log(Hes.determinant());
+                //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
+                //    logdetHxOpt = 0.5*std::log(Hes.determinant());
+
+                _VySVyOpt = -0.5*(_Av.square().cwiseProduct(_Ws.cwiseInverse()).sum(); 
+                update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
+                _logdetHyOpt *= 0.5;
+                    
+                //compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+
+                    
 
                 NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
+                NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
                 NT u_prog = std::log(rng.sample_urdist());
 
                 if (u_prog > log_prob) {
@@ -202,7 +217,13 @@ struct StaticBilliardWalk
                     _Av = _Av_prev;
                     _lambdas = _lambdas_prev;
                     _lambda_prev = _lambda_prev0;
+                    _lltOfInvHes_next = _lltOfInvHes_prev;
+                    _logdetHyOpt = _logdetHxOpt;
+                } else {
+                    _logdetHxOpt = _logdetHyOpt;
+                    _lltOfInvHes_prev = _lltOfInvHes_next;
                 }
+
             }
             p = _p;
         }
@@ -269,11 +290,12 @@ struct StaticBilliardWalk
                 P.compute_reflection(_v, _p, _update_parameters);
                 it++;
             }
-            compute_hessian(_p, _A, P.get_vec(), optHes);
-            optInvHes = optHes.inverse();
-            logdetHx = optHes.determinant();
-            lltOfInvHes_prev = Eigen::LLT<MT>(optInvHes);
-            lltOfInvHes_next = Eigen::LLT<MT>(optInvHes);
+            compute_hessian(_p, _A, P.get_vec(), _optHes);
+            _optInvHes = optHes.inverse();
+            _logdetHxOpt = 0.5 * std::log(_optHes.determinant());
+            _lltOfInvHes_prev = Eigen::LLT<MT>(_optInvHes);
+            _lltOfInvHes_next = Eigen::LLT<MT>(_optInvHes);
+            _optInvHes_prev = _optInvHes;
         }
 
 
@@ -290,13 +312,32 @@ struct StaticBilliardWalk
             
         }
 
-        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas1, VT const& lambdas2, VT const& Av, NT const& t) {
+        inline void compute_Ws(VT const& b, MT const& A, VT &Ws, VT const& lambdas1, VT const& Av1, NT const& t1
+                               VT const& lambdas2, VT const& Av, NT const& t) {
 
-            VT p1 = (b - lambdas1).square();
+            VT p1 = (b - (lambdas1 + t1*Av1)).square();
             VT p2 = (b - (lambdas2 + t*Av)).square();
 
             Ws.noalias() = (p1-p2).cwiseProduct((p1.cwiseProduct(p2)).cwiseInverse());
 
+        }
+
+        inline void update_determinant_cholesky_inverse(VT const& Ws, MT const& Atrans, MT &optInvHes,
+                                                        NT &logdetHyOpt, Eigen::LLT<MT> &lltOfInvHes_next) {
+            NT g;
+            VT v, u;
+            MT M;
+            for (int i = 0; i < Ws.size(); i++)
+            {
+                v = Atrans.col(i) / std::sqrt(Ws(i));
+                g = (v.cwiseProduct(optInvHes*v)).sum();
+                logdetHyOpt += std::log(1.0 + g);
+                g = -(1.0 / (1.0 + g));
+                u.noalias() = optInvHes * v;
+                M.noalias() = u*u.transpose();
+                optInvHes += g*M;
+                lltOfInvHes_next.rankUpdate(u, g);
+            }
         }
 
         double _L;
@@ -305,11 +346,11 @@ struct StaticBilliardWalk
         NT _lambda_prev, _lambda_prev0;
         MT _AA;
         MT _A, _Atrans;
-        MT invHes, optInvHes;
-        MT Hes, optHes;
+        MT _invHes, _optInvHes, _optInvHes_prev;
+        MT _Hes, _optHes;
         VT _b, _Ws;
-        NT VxSVxOpt, VySVyOpt, logdetHxOpt, logdetHyOpt;
-        Eigen::LLT<MT> lltOfInvHes_prev, lltOfInvHes_next;
+        NT _VxSVxOpt, _VySVyOpt, _logdetHxOpt, _logdetHyOpt;
+        Eigen::LLT<MT> _lltOfInvHes_prev, _lltOfInvHes_next;
         update_parameters _update_parameters;
         typename Point::Coeff _lambdas;
         typename Point::Coeff _Av;
