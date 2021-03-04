@@ -115,7 +115,7 @@ struct StaticOptBilliardWalk
                 _invHes = _Hes.inverse();
                 Eigen::LLT<MT> lltOfA(_invHes); // compute the Cholesky decomposition of A
                 //MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
-                _v = Point(_lltOfInvHes_prev.matrixL() * _v.getCoefficients());
+                _v = Point(lltOfA.matrixL() * _v.getCoefficients());
                 Point v0 = _v;
                 Point p0 = _p;
 
@@ -135,8 +135,8 @@ struct StaticOptBilliardWalk
 
                     //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                     //    logdetHxOpt = 0.5*std::log(Hes.determinant());
-
-                    _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_Ws.cwiseInverse())).sum(); 
+                    _temp = _b - (_lambdas + T*_Av);
+                    _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_temp.cwiseProduct(_temp).cwiseInverse())).sum();
                     update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
                     _logdetHyOpt *= 0.5;
                     
@@ -146,8 +146,11 @@ struct StaticOptBilliardWalk
                         logdetHy = 0.5*std::log(_Hes.determinant());
 
                     NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
-                    NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
+                    NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - _logdetHxOpt;
                     NT u_prog = std::log(rng.sample_urdist());
+
+                    std::cout<<"[1]VxSVx = "<<VxSVx<<", logdetHx = "<< logdetHx<< " VySVy = "<< VySVy<< " logdetHy = "<< logdetHy<<std::endl;
+                    std::cout<<"[1]VxSVxOpt = "<< _VxSVxOpt<< ", logdetHxOpt = "<< _logdetHxOpt<< " VySVyOpt = "<< _VySVyOpt<< " _logdetHyOpt = "<< _logdetHyOpt<<"\n"<<std::endl;
 
                     if (u_prog > log_prob) {
                         _p = p0;
@@ -156,9 +159,11 @@ struct StaticOptBilliardWalk
                         _lambda_prev = _lambda_prev0;
                         _lltOfInvHes_next = _lltOfInvHes_prev;
                         _logdetHyOpt = _logdetHxOpt;
+                        _optInvHes_prev = _optInvHes;
                     } else {
                         _logdetHxOpt = _logdetHyOpt;
                         _lltOfInvHes_prev = _lltOfInvHes_next;
+                        _optInvHes = _optInvHes_prev;
                     }
 
 
@@ -202,7 +207,8 @@ struct StaticOptBilliardWalk
                 //VxSVxOpt = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
                 //    logdetHxOpt = 0.5*std::log(Hes.determinant());
 
-                _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_Ws.cwiseInverse())).sum(); 
+                _temp = _b - (_lambdas + _lambda_prev*_Av);
+                _VySVyOpt = -0.5*(_Av.cwiseProduct(_Av).cwiseProduct(_temp.cwiseProduct(_temp).cwiseInverse())).sum();
                 update_determinant_cholesky_inverse(_Ws, _Atrans, _optInvHes, _logdetHyOpt, _lltOfInvHes_next);
                 _logdetHyOpt *= 0.5;
                     
@@ -214,6 +220,9 @@ struct StaticOptBilliardWalk
                 NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
                 NT log_prob2 = _VySVyOpt + _logdetHyOpt - _VxSVxOpt - logdetHx;
                 NT u_prog = std::log(rng.sample_urdist());
+
+                std::cout<<"[2]VxSVx = "<<VxSVx<<", logdetHx = "<< logdetHx<< " VySVy = "<< VySVy<< " logdetHy = "<< logdetHy<<std::endl;
+                std::cout<<"[2]VxSVxOpt = "<< _VxSVxOpt<< ", logdetHxOpt = "<< _logdetHxOpt<< " VySVyOpt = "<< _VySVyOpt<< " _logdetHyOpt = "<< _logdetHyOpt<<"\n"<<std::endl;
 
                 if (u_prog > log_prob) {
                     _p = p0;
@@ -296,6 +305,7 @@ struct StaticOptBilliardWalk
             compute_hessian(_p, _A, P.get_vec(), _optHes);
             _optInvHes = _optHes.inverse();
             _logdetHxOpt = 0.5 * std::log(_optHes.determinant());
+            _logdetHyOpt = _logdetHxOpt;
             _lltOfInvHes_prev = Eigen::LLT<MT>(_optInvHes);
             _lltOfInvHes_next = Eigen::LLT<MT>(_optInvHes);
             _optInvHes_prev = _optInvHes;
@@ -332,9 +342,10 @@ struct StaticOptBilliardWalk
             NT g;
             VT v, u;
             MT M;
+            std::cout<<"Ws.size() = "<<Ws.size()<<std::endl;
             for (int i = 0; i < Ws.size(); i++)
             {
-                v = Atrans.col(i) / std::sqrt(Ws(i));
+                v = Atrans.col(i) * std::sqrt(Ws(i));
                 g = (v.cwiseProduct(optInvHes*v)).sum();
                 logdetHyOpt += std::log(1.0 + g);
                 g = -(1.0 / (1.0 + g));
