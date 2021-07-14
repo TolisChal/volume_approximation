@@ -5,21 +5,21 @@
 
 // Licensed under GNU LGPL.3, see LICENCE file
 
-#ifndef RANDOM_WALKS_GENERIC_STATIC_BILLIARD_WALK_HPP
-#define RANDOM_WALKS_GENERIC_STATIC_BILLIARD_WALK_HPP
+#ifndef RANDOM_WALKS_GENERIC_BILLIARD_WALK_HESSIAN_HPP
+#define RANDOM_WALKS_GENERIC_BILLIARD_WALK_HESSIAN_HPP
 
 #include "sampling/sphere.hpp"
 
 
 // Billiard walk which accelarates each step for uniform distribution
 
-struct StaticBilliardWalk
+struct StaticBilliardWalkHessian
 {
-    StaticBilliardWalk(double L)
+    StaticBilliardWalkHessian(double L)
             :   param(L, true)
     {}
 
-    StaticBilliardWalk()
+    StaticBilliardWalkHessian()
             :   param(0, false)
     {}
 
@@ -110,7 +110,7 @@ struct StaticBilliardWalk
                 _v = GetDirection<Point>::apply(n, rng, false);
                 compute_hessian(_p, _A, P.get_vec(), Hes);
                 invHes = Hes.inverse();
-                Eigen::LLT<MT> lltOfA(invHes); // compute the Cholesky decomposition of A
+                Eigen::LLT<MT> lltOfA(Hes); // compute the Cholesky decomposition of A
                 MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
                 _v = Point(L * _v.getCoefficients());
                 T *= (1.0 / _v.getCoefficients().norm());
@@ -125,13 +125,14 @@ struct StaticBilliardWalk
                     _lambda_prev = T;
 
                     
-                    NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
-                    logdetHx = 0.5*std::log(Hes.determinant());
+                    NT VxSVx = -0.5*(v0.getCoefficients().dot(invHes * v0.getCoefficients())), 
+                    logdetHx = 0.5*std::log(invHes.determinant());
 
                     compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+                    invHes = Hes.inverse();
 
-                    NT VySVy = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
-                        logdetHy = 0.5*std::log(Hes.determinant());
+                    NT VySVy = -0.5 * (_v.getCoefficients().dot(invHes * _v.getCoefficients())), 
+                        logdetHy = 0.5*std::log(invHes.determinant());
 
                     NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
                     NT u_prog = std::log(rng.sample_urdist());
@@ -153,7 +154,7 @@ struct StaticBilliardWalk
                 P.compute_reflection(_v, _p, _update_parameters);
                 it++;
 
-                while (it < 1000*n)
+                while (it < 100000*n)
                 {
                     std::pair<NT, int> pbpair
                             = P.line_positive_intersect(_p, _v, _lambdas, _Av, _lambda_prev, _AA, _update_parameters);
@@ -176,13 +177,14 @@ struct StaticBilliardWalk
                     continue;
                 }*/
 
-                NT VxSVx = -0.5*(v0.getCoefficients().dot(Hes * v0.getCoefficients())), 
-                    logdetHx = 0.5*std::log(Hes.determinant());
+                NT VxSVx = -0.5*(v0.getCoefficients().dot(invHes * v0.getCoefficients())), 
+                    logdetHx = 0.5*std::log(invHes.determinant());
 
                 compute_hessian(_p, P.get_mat(), P.get_vec(), Hes);
+                invHes = Hes.inverse();
 
-                NT VySVy = -0.5 * (_v.getCoefficients().dot(Hes * _v.getCoefficients())), 
-                    logdetHy = 0.5*std::log(Hes.determinant());
+                NT VySVy = -0.5 * (_v.getCoefficients().dot(invHes * _v.getCoefficients())), 
+                    logdetHy = 0.5*std::log(invHes.determinant());
 
                 NT log_prob = VySVy + logdetHy - VxSVx - logdetHx;
                 NT u_prog = std::log(rng.sample_urdist());
@@ -219,8 +221,8 @@ struct StaticBilliardWalk
             _p = p;
             _v = GetDirection<Point>::apply(n, rng, false);
             compute_hessian(p, _A, P.get_vec(), Hes);
-            invHes = Hes.inverse();
-            Eigen::LLT<MT> lltOfA(invHes); // compute the Cholesky decomposition of A
+            //invHes = Hes.inverse();
+            Eigen::LLT<MT> lltOfA(Hes); // compute the Cholesky decomposition of A
             MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
             _v = Point(L * _v.getCoefficients());
 
@@ -270,10 +272,8 @@ struct StaticBilliardWalk
 
             for (int i = 0; i < m; i++)
             {
-                std::cout<<"A.row(i) = "<<A.row(i)<<"\n"<<std::endl;
                 b_Ax = b(i) - A.row(i) * x.getCoefficients();
                 Hes += (A.row(i).transpose()*A.row(i)) * (1.0 / (b_Ax * b_Ax));
-                std::cout<<"A.row(i).transpose()*A.row(i) = "<<A.row(i).transpose()*A.row(i)<<"\n"<<std::endl;
             }
             
         }
@@ -287,7 +287,6 @@ struct StaticBilliardWalk
         MT invHes;
         MT Hes;
         NT detH;
-        std::vector<MT> RankOneMatrices;
         update_parameters _update_parameters;
         typename Point::Coeff _lambdas;
         typename Point::Coeff _Av;
@@ -299,5 +298,6 @@ struct StaticBilliardWalk
 
 
 #endif
+
 
 

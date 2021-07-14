@@ -31,6 +31,7 @@ enum random_walks {
   billiard,
   accelarated_billiard,
   static_gbw,
+  static_gbw_hessian,
   static_opt_gbw,
   static_superopt_gbw,
   dikin_walk,
@@ -138,6 +139,15 @@ void sample_from_polytope(Polytope &P, int type, RNGType &rng, PointList &randPo
             uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
         } else {
             uniform_sampling<StaticBilliardWalk>(randPoints, P, rng, walkL, numpoints,
+                     StartingPoint, nburns);
+        }
+        break;
+    case static_gbw_hessian:
+        if(set_L) {
+            StaticBilliardWalkHessian WalkType(L);
+            uniform_sampling(randPoints, P, rng, WalkType, walkL, numpoints, StartingPoint, nburns);
+        } else {
+            uniform_sampling<StaticBilliardWalkHessian>(randPoints, P, rng, walkL, numpoints,
                      StartingPoint, nburns);
         }
         break;
@@ -515,6 +525,14 @@ Rcpp::NumericMatrix sample_points(Rcpp::Nullable<Rcpp::Reference> P,
             set_L = true;
             if (L <= 0.0) throw Rcpp::exception("L must be a postitive number!");
         }
+    } else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("gBiWHes")) == 0) {
+        if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
+        walk = static_gbw_hessian;
+        if (Rcpp::as<Rcpp::List>(random_walk).containsElementNamed("L")) {
+            L = Rcpp::as<NT>(Rcpp::as<Rcpp::List>(random_walk)["L"]);
+            set_L = true;
+            if (L <= 0.0) throw Rcpp::exception("L must be a postitive number!");
+        }
     } else if (Rcpp::as<std::string>(Rcpp::as<Rcpp::List>(random_walk)["walk"]).compare(std::string("OptSgBiW")) == 0) {
         if (gaussian) throw Rcpp::exception("Billiard walk can be used only for uniform sampling!");
         walk = static_opt_gbw;
@@ -578,9 +596,11 @@ Rcpp::NumericMatrix sample_points(Rcpp::Nullable<Rcpp::Reference> P,
             Hpolytope HP(dim, Rcpp::as<MT>(Rcpp::as<Rcpp::Reference>(P).field("A")),
                     Rcpp::as<VT>(Rcpp::as<Rcpp::Reference>(P).field("b")));
 
-            InnerBall = HP.ComputeInnerBall();
-            if (InnerBall.second < 0.0) throw Rcpp::exception("Unable to compute a feasible point.");
+            HP.normalize();
             if (!set_starting_point || (!set_mode && gaussian)) {
+                InnerBall = HP.ComputeInnerBall();
+                if (InnerBall.second < 0.0) throw Rcpp::exception("Unable to compute a feasible point.");
+
                 if (!set_starting_point) StartingPoint = InnerBall.first;
                 if (!set_mode && gaussian) mode = InnerBall.first;
             }

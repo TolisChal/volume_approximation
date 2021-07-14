@@ -120,6 +120,7 @@ struct StaticSuperOptBilliardWalk
                 //std::cout<<"lltOfA(_invHes) = "<<L1<< "\n _lltOfInvHes_next = "<<L2<<"\n"<<std::endl;
                 //MT L = lltOfA.matrixL(); // retrieve factor L  in the decomposition
                 _v = Point(_lltOfInvHes_next.matrixL() * _v.getCoefficients());
+                T *= (1.0 / _v.getCoefficients().norm());
                 Point v0 = _v;
                 Point p0 = _p;
 
@@ -287,6 +288,7 @@ struct StaticSuperOptBilliardWalk
             _v = Point(_lltOfInvHes_next.matrixL() * _v.getCoefficients());
 
             NT T = -std::log(rng.sample_urdist()) * _L;
+            T *= (1.0 / _v.getCoefficients().norm());
             Point p0 = _p;
             int it = 0;
 
@@ -332,7 +334,7 @@ struct StaticSuperOptBilliardWalk
                 it++;
             }
             compute_hessian(_p, P.get_mat(), P.get_vec(), _optHes);
-            _optInvHes = _optHes.inverse();
+            _optInvHes.noalias() = _optHes.inverse();
             _logdetHxOpt = std::log(_optHes.determinant());
             //std::cout<<"_p = "<<_p.getCoefficients().transpose()<<", _logdetHxOpt = "<< _logdetHxOpt<< std::endl;
             _logdetHyOpt = _logdetHxOpt;
@@ -348,9 +350,9 @@ struct StaticSuperOptBilliardWalk
             VT v, u;
             MT M;
 
-            _temp = b - (lambdas1 + t1*Av1);
+            _temp.noalias() = b - (lambdas1 + t1*Av1);
             VT p1 = _temp.cwiseProduct(_temp);
-            _temp = b - (lambdas2 + t2*Av2);
+            _temp.noalias() = b - (lambdas2 + t2*Av2);
             VySVyOpt = -0.5*(Av2.cwiseProduct(Av2).cwiseProduct(_temp.cwiseProduct(_temp).cwiseInverse())).sum();
             VT p2 = _temp.cwiseProduct(_temp);
 
@@ -361,16 +363,16 @@ struct StaticSuperOptBilliardWalk
                 v = Atrans.col(i);// * std::sqrt(std::abs(Ws(i)));
                 //std::cout<<"v*v' = "<<v*v.transpose()* Ws(i)<<", wiai*ai^T = "<<Ws(i)*(Atrans.col(i) * Atrans.col(i).transpose())<<std::endl;
                 //std::cout<<"v = "<<v.transpose()<< ", optInvHes*v = "<<optInvHes*v<<std::endl;
-                g = (v.cwiseProduct(optInvHes*v)).sum()* Ws(i);
+                g = (v.cwiseProduct(optInvHes*v)).sum()* Ws.coeff(i);
                 //std::cout<<"g = "<<g<<", v'*H*v = "<<v.transpose()*optInvHes*v*Ws(i)<<std::endl;
                 logdetHyOpt += std::log(1.0 + g);
                 g = -(1.0 / (1.0 + g));
                 u.noalias() = (optInvHes * v);// *(std::sqrt(std::abs(Ws(i))) * sgn(Ws(i)));
                 //std::cout<<"u = "<<u.transpose()<<std::endl;
-                M.noalias() = u*u.transpose()* Ws(i);
+                M.noalias() = u*u.transpose()* Ws.coeff(i);
                 //std::cout<<"M = \n"<<M<<std::endl;
                 optInvHes += g*M;
-                lltOfInvHes_next.rankUpdate(u* std::sqrt(std::abs(Ws(i))), g*sgn(Ws(i)));
+                lltOfInvHes_next.rankUpdate(u* std::sqrt(std::abs(Ws.coeff(i))), g*sgn(Ws.coeff(i)));
             }
         }
 
