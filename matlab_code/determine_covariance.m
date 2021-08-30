@@ -1,4 +1,4 @@
-function E = determine_covariance(A, b, x0, N, W, L, sigma, prob_max, prob_min)
+function [E, acceptance_prob] = determine_covariance(A, b, x0, N, W, L, sigma, prob_max, prob_min)
 
     [Q, D] = eig(sigma);
     n = size(sigma, 2);
@@ -9,7 +9,7 @@ function E = determine_covariance(A, b, x0, N, W, L, sigma, prob_max, prob_min)
     identity = eye(n);
     
     e = 1.001;
-    max_scale = (max_eig - min_eig * e) / (e - 1);
+    max_scale = (max_eig - min_eig * e) / (e - 1); % this factor corresponds to the classical billiard walk
     min_scale = 0;
     
     while(true)
@@ -21,7 +21,6 @@ function E = determine_covariance(A, b, x0, N, W, L, sigma, prob_max, prob_min)
         min_eig = min(diag(Dnew))
         
         E = Q * Dnew * Q';
-        %L = 2* sqrt(max(eig(E)));
         [~, ~, acceptance_prob] = BilliardWalk_ellipsoid(A, b, x0, N, W, L, E);
         acceptance_prob
         
@@ -34,9 +33,4 @@ function E = determine_covariance(A, b, x0, N, W, L, sigma, prob_max, prob_min)
         end
     end
 
-
-
-
 end
-
-
