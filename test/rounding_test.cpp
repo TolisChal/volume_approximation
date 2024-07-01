@@ -185,8 +185,10 @@ void rounding_log_barrier_test(Polytope &HP,
 
     typedef BoostRandomNumberGenerator<boost::mt19937, NT, 5> RNGType;
     RNGType rng(d);
-    std::pair<Point, NT> InnerBall = HP.ComputeInnerBall();
-    std::tuple<MT, VT, NT> res = inscribed_ellipsoid_rounding<MT, VT, NT, Polytope, Point, EllipsoidType::LOG_BARRIER>(HP, InnerBall.first);
+    
+    VT x0(d);
+    x0 << 0.7566, 0.6374, 0.3981, 0.9248, 0.9828;
+    std::tuple<MT, VT, NT> res = inscribed_ellipsoid_rounding<MT, VT, NT, Polytope, Point, EllipsoidType::LOG_BARRIER>(HP, Point(x0));
     // Setup the parameters
     int walk_len = 1;
     NT e = 0.1;
