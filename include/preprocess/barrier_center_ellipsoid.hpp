@@ -109,6 +109,9 @@ std::tuple<MT_dense, VT, bool>  barrier_center_ellipsoid_linear_ineq(MT const& A
                                                                      NT const rel_pos_err_tol = 1e-12) 
 {
     VT x0 = compute_feasible_point(A, b);
+    if constexpr (BarrierType == EllipsoidType::VAIDYA_BARRIER) {
+            std::cout<<"x0: "<<x0.transpose()<<std::endl;
+        }
     return barrier_center_ellipsoid_linear_ineq<MT_dense, BarrierType, MT, VT, NT>(A, b, x0, max_iters, grad_err_tol, rel_pos_err_tol);
 }
 
