@@ -16,20 +16,21 @@
 #include "preprocess/feasible_point.hpp"
 
 
-template<typename MT, int ellipsoid_type, typename Custom_MT, typename VT, typename NT>
-inline static std::tuple<MT, VT, NT>
-compute_inscribed_ellipsoid(Custom_MT A, VT b, VT const& x0,
+// Using MT as to deal with both dense and sparse matrices, MT_dense will be the type of result matrix
+template<typename MT_dense, int ellipsoid_type, typename MT, typename VT, typename NT>
+inline static std::tuple<MT_dense, VT, NT>
+compute_inscribed_ellipsoid(MT A, VT b, VT const& x0,
                             unsigned int const& maxiter,
                             NT const& tol, NT const& reg)
 {
     if constexpr (ellipsoid_type == EllipsoidType::MAX_ELLIPSOID)
     {
-        return max_inscribed_ellipsoid<MT>(A, b, x0, maxiter, tol, reg);
+        return max_inscribed_ellipsoid<MT_dense>(A, b, x0, maxiter, tol, reg);
     } else if constexpr (ellipsoid_type == EllipsoidType::LOG_BARRIER ||
                          ellipsoid_type == EllipsoidType::VOLUMETRIC_BARRIER ||
                          ellipsoid_type == EllipsoidType::VAIDYA_BARRIER)
     {
-        return barrier_center_ellipsoid_linear_ineq<MT, ellipsoid_type, Custom_MT, VT, NT>(A, b, x0);
+        return barrier_center_ellipsoid_linear_ineq<MT_dense, ellipsoid_type, MT, VT, NT>(A, b, x0);
     } else
     {
         std::runtime_error("Unknown rounding method.");
@@ -124,8 +125,7 @@ std::tuple<MT, VT, NT> inscribed_ellipsoid_rounding(Polytope &P,
         iter++;
     }
 
-    std::tuple<MT, VT, NT> result = std::make_tuple(T, shift, std::abs(round_val));
-    return result;
+    return std::make_tuple(T, shift, std::abs(round_val));
 }
 
 #endif 
