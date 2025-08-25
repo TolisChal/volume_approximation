@@ -8,8 +8,8 @@
 // Licensed under GNU LGPL.3, see LICENCE file
 
 
-#ifndef MAX_ELLIPSOID_ROUNDING_HPP
-#define MAX_ELLIPSOID_ROUNDING_HPP
+#ifndef INSCRIBED_ELLIPSOID_ROUNDING_HPP
+#define INSCRIBED_ELLIPSOID_ROUNDING_HPP
 
 #include "max_inscribed_ellipsoid.hpp"
 
@@ -21,7 +21,7 @@ template
     typename Polytope,
     typename Point   
 >
-std::tuple<MT, VT, NT> max_inscribed_ellipsoid_rounding(Polytope &P, 
+std::tuple<MT, VT, NT> inscribed_ellipsoid_rounding(Polytope &P, 
                                                         Point const& InnerPoint,
                                                         unsigned int const max_iterations = 5,
                                                         NT const max_eig_ratio = NT(6))
