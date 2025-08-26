@@ -297,7 +297,8 @@ add_test(NAME test_round_max_ellipsoid
           COMMAND new_rounding_test -tc=round_max_ellipsoid)
 add_test(NAME test_round_svd
           COMMAND new_rounding_test -tc=round_svd)
-
+add_test(NAME test_round_max_ellipsoid_sparse
+          COMMAND new_rounding_test -tc=round_max_ellipsoid_sparse)
 
 
 add_executable (logconcave_sampling_test logconcave_sampling_test.cpp $<TARGET_OBJECTS:test_main>)
