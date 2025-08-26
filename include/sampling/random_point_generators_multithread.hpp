@@ -88,7 +88,7 @@ struct RandomPointGeneratorMultiThread
 
             for (unsigned int it = 0; it < num_points_per_thread[thread_index]; it++)
             {
-                walk.template apply(P, thread_random_walk_parameters, walk_length, rng);
+                walk.apply(P, thread_random_walk_parameters, walk_length, rng);
                 #pragma omp critical
                 {
                     policy_storing<Walk>::template store(policy, randPoints, thread_random_walk_parameters);
@@ -135,7 +135,7 @@ struct RandomPointGeneratorMultiThread
 
             for (unsigned int it = 0; it < num_points_per_thread[thread_index]; it++)
             {
-                walk.template apply(P, thread_random_walk_parameters, walk_length, rng);
+                walk.apply(P, thread_random_walk_parameters, walk_length, rng);
                 #pragma omp critical
                 {
                     policy_storing<Walk>::template store(policy, randPoints, thread_random_walk_parameters);
@@ -194,7 +194,7 @@ struct GaussianPointGeneratorMultiThread
 
             for (unsigned int it = 0; it < num_points_per_thread[thread_index]; it++)
             {
-                walk.template apply(P, thread_random_walk_parameters, a_i, walk_length, rng);
+                walk.apply(P, thread_random_walk_parameters, a_i, walk_length, rng);
                 #pragma omp critical
                 {
                     policy_storing<Walk>::template store(policy, randPoints, thread_random_walk_parameters);
@@ -242,7 +242,7 @@ struct GaussianPointGeneratorMultiThread
 
             for (unsigned int it = 0; it < num_points_per_thread[thread_index]; it++)
             {
-                walk.template apply(P, thread_random_walk_parameters, a_i, walk_length, rng);
+                walk.apply(P, thread_random_walk_parameters, a_i, walk_length, rng);
                 #pragma omp critical
                 {
                     policy_storing<Walk>::template store(policy, randPoints, thread_random_walk_parameters);

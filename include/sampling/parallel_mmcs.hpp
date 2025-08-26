@@ -109,7 +109,7 @@ bool perform_parallel_mmcs_step(Polytope &P,
     Walk walk(P, L);
 
     _thread_parameters random_walk_parameters(d, m);
-    walk.template parameters_burnin(P, pp, 10 + int(std::log(NT(d))), 10, rng, random_walk_parameters);
+    walk.parameters_burnin(P, pp, 10 + int(std::log(NT(d))), 10, rng, random_walk_parameters);
     Point const p = pp;
 
     #pragma omp parallel
@@ -123,10 +123,10 @@ bool perform_parallel_mmcs_step(Polytope &P,
             {
                 break;
             }
-            walk.template get_starting_point(P, p, thread_random_walk_parameters, 10, rng);
+            walk.get_starting_point(P, p, thread_random_walk_parameters, 10, rng);
             for (int i = 0; i < window; i++)
             {
-                walk.template apply(P, thread_random_walk_parameters, walk_length, rng);
+                walk.apply(P, thread_random_walk_parameters, walk_length, rng);
                 winPoints_per_thread[thread_index].col(i) = thread_random_walk_parameters.p.getCoefficients();
             }
 

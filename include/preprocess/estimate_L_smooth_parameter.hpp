@@ -44,7 +44,7 @@ double estimate_L_smooth(Polytope &P, Point &p, unsigned int const& walk_length,
     RandomWalk walk(P, p, rng);
     for (unsigned int i=0; i<rnum; ++i)
     {
-        walk.template apply(P, p, walk_length, rng);
+        walk.apply(P, p, walk_length, rng);
         randPoints[0] = p;
         listOfPoints.push_back(randPoints);
     }
