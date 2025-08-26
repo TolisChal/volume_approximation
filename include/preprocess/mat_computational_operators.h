@@ -275,6 +275,7 @@ update_Bmat(MT &B, VT const& AtDe, VT const& d,
     {
         MT AtD_A = AtD * A;
         int k = 0;
+        const NT diagonal_epsilon = 1e-14;
         while(k < B.outerSize())
         {
             typename MT::InnerIterator it2(AtD_A, k <= n-1 ? k : k-1);
@@ -299,7 +300,7 @@ update_Bmat(MT &B, VT const& AtDe, VT const& d,
 
                 if (it1.row() == it1.col())
                 {
-                    it1.valueRef() += 1e-14;
+                    it1.valueRef() += diagonal_epsilon;
                 }
                 if (it1.row()<n-1) ++it2;
             }
@@ -311,6 +312,5 @@ update_Bmat(MT &B, VT const& AtDe, VT const& d,
             "Matrix type is not supported.");
     }
 }
-
 
 #endif // MAT_COMPUTATIONAL_OPERATORS_H

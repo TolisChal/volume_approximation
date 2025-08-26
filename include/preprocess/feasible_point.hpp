@@ -18,11 +18,13 @@
 template <typename MT, typename VT>
 VT compute_feasible_point(MT const& A, VT const& b)
 {
+    typedef typename VT::value_type NT;
     VT x;
     bool feasibility_only = true, converged;
     unsigned max_iters = 10000;
+    const NT tol = 1e-08;
     // Compute a feasible point
-    std::tie(x, std::ignore, converged) = max_inscribed_ball(A, b, max_iters, 1e-08, feasibility_only);
+    std::tie(x, std::ignore, converged) = max_inscribed_ball(A, b, max_iters, tol, feasibility_only);
     if (!converged || ((A * x).array() > b.array()).any())
     {
         std::runtime_error("The computation of a feasible point failed.");

@@ -75,7 +75,10 @@ std::tuple<MT, VT, NT> inscribed_ellipsoid_rounding(Polytope &P,
     VT x0 = InnerPoint.getCoefficients(), center, shift = VT::Zero(d);
     MT E, L, T = MT::Identity(d, d);
     bool converged;
-    NT R = 100.0, r = 1.0, tol = std::pow(10, -6.0), reg = std::pow(10, -4.0), round_val = 1.0;
+    NT R = 100.0, r = 1.0;
+    const NT tol = std::pow(10, -6.0), diag_E_epsilon = std::pow(10, -8.0);
+    NT reg = std::pow(10, -4.0);
+    NT round_val = 1.0;
 
     while (true)
     {
@@ -84,7 +87,7 @@ std::tuple<MT, VT, NT> inscribed_ellipsoid_rounding(Polytope &P,
             compute_inscribed_ellipsoid<MT, ellipsoid_type>(P.get_mat(), P.get_vec(), x0, maxiter, tol, reg);
         
         E = (E + E.transpose()) / 2.0;
-        E += MT::Identity(d, d)*std::pow(10, -8.0); //normalize E
+        E += MT::Identity(d, d)*diag_E_epsilon; //normalize E
 
         Eigen::LLT<MT> lltOfA(E.llt().solve(MT::Identity(E.cols(), E.cols()))); // compute the Cholesky decomposition of E^{-1}
         L = lltOfA.matrixL();
