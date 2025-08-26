@@ -358,6 +358,8 @@ add_test(NAME test_feasibility_point
           COMMAND test_internal_points -tc=test_feasibility_point)
 add_test(NAME test_analytic_center
           COMMAND test_internal_points -tc=test_analytic_center)
+add_test(NAME test_max_ball_sparse
+          COMMAND test_internal_points -tc=test_max_ball_sparse)
 
 set(ADDITIONAL_FLAGS "-march=native -DSIMD_LEN=0 -DTIME_KEEPING")
 
