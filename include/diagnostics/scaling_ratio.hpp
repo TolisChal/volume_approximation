@@ -11,6 +11,11 @@
 #ifndef DIAGNOSTICS_SCALING_RATIO_HPP
 #define DIAGNOSTICS_SCALING_RATIO_HPP
 
+#include <tuple>
+#include <vector>
+#include <cmath>
+#include <cstdlib>
+
 template<typename Polytope>
 std::tuple<typename Polytope::VT, typename Polytope::MT,typename Polytope::VT, typename Polytope::VT>
 scaling_ratio_boundary_test(const Polytope&  P,

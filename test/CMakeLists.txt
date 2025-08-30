@@ -214,6 +214,7 @@ add_test(NAME test_sparse COMMAND sampling_test -tc=sparse)
 
 add_executable (shake_and_bake_test shake_and_bake_test.cpp $<TARGET_OBJECTS:test_main>)
 add_test(NAME test_shake_and_bake COMMAND shake_and_bake_test -tc=shake_and_bake)
+add_test(NAME test_scaling_ratio_boundary COMMAND shake_and_bake_test -tc=scaling_ratio_boundary)
 
 add_executable (mmcs_test mmcs_test.cpp $<TARGET_OBJECTS:test_main>)
 add_test(NAME test_mmcs COMMAND mmcs_test -tc=mmcs)

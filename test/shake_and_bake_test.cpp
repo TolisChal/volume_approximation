@@ -25,6 +25,7 @@
 #include "sampling/sampling.hpp"
 
 #include "diagnostics/univariate_psrf.hpp"
+#include "diagnostics/scaling_ratio.hpp"
 
 #include "preprocess/feasible_point.hpp"
 
@@ -85,6 +86,48 @@ void call_test_shake_and_bake(){
     CHECK(score.maxCoeff() < 1.1);
 }
 
+template <typename NT, typename WalkType = ShakeAndBakeWalk>
+void call_test_scaling_ratio_boundary(){
+    typedef Cartesian<NT>    Kernel;
+    typedef typename Kernel::Point    Point;
+    typedef HPolytope<Point> Hpolytope;
+    typedef Eigen::Matrix<NT,Eigen::Dynamic,Eigen::Dynamic> MT;
+    typedef Eigen::Matrix<NT,Eigen::Dynamic,1> VT;
+    Hpolytope P;
+    unsigned int d = 10;
+
+    std::cout << "--- Testing Scaling Ratio Boundary Test for H-cube 10" << std::endl;
+    P = generate_cube<Hpolytope>(d, false);
+    P.ComputeInnerBall();
+
+    // Get boundary samples using shake and bake
+    MT samples = get_samples_shake_and_bake<MT, WalkType>(P);
+
+    // Call scaling_ratio_boundary_test
+    auto [scale, coverage, max_dev, avg_dev] = scaling_ratio_boundary_test(P, samples);
+    
+    std::cout << "Scale factors: ";
+    for (int i = 0; i < scale.size(); ++i) {
+        std::cout << scale[i] << " ";
+    }
+    std::cout << std::endl;
+    
+    // Check --for each facet-- that each value in coverage is at most 0.1 different from the corresponding value in scale
+    const int m = P.num_of_hyperplanes();
+    const int K = scale.size();
+    
+    for (int f = 0; f < m; ++f) {
+        for (int k = 0; k < K; ++k) {
+            NT diff = std::abs(coverage(f, k) - scale[k]);
+            CHECK(diff <= 0.1);
+        }
+    }
+}
+
 TEST_CASE("shake_and_bake") {
     call_test_shake_and_bake<double>();
+}
+
+TEST_CASE("scaling_ratio_boundary") {
+    call_test_scaling_ratio_boundary<double>();
 }
