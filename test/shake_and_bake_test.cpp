@@ -119,7 +119,7 @@ void call_test_scaling_ratio_boundary(){
     for (int f = 0; f < m; ++f) {
         for (int k = 0; k < K; ++k) {
             NT diff = std::abs(coverage(f, k) - scale[k]);
-            CHECK(diff <= 0.1);
+            CHECK(diff <= 0.01);
         }
     }
 }
